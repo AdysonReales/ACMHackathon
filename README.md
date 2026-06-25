@@ -8,7 +8,7 @@ An AI-powered, mobile-responsive study companion web application turn-based acad
 We are a team of application developers collaborating to push the boundaries of gamified learning systems and local language engineering datasets.
 
 * **Adyson Reales** — Lead Architect / Project Management
-* **Rolando Zagala** — Frontend Engineer / State Machine Developer
+* **Rolando JR. Zagala** — Frontend Engineer / State Machine Developer
 * **Elijah Raven De Luna** — Backend & Infrastructure Engineer
 * **Lleyton Flores** — Asset Pipeline & UI/UX Designer
 
