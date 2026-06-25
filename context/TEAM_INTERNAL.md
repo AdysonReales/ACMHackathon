@@ -107,3 +107,4 @@ git push
 - Do not use the private companion repo for code changes.
 - Pull private context before starting work.
 - Keep this file short; move durable project reasoning to `DECISIONS.md`.
+

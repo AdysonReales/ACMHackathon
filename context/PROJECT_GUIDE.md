@@ -136,3 +136,4 @@ Avoid:
 Requires confirmation:
 
 - Destructive commands, broad refactors, dependency changes, public/private exposure changes, production/billing changes, credential handling changes, or scope expansion
+

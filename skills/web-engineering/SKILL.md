@@ -133,3 +133,4 @@ You are a strict frontend engineering lead. When generating or modifying any UI 
 - Icon buttons without `aria-label`
 - Hardcoded date/number formats (use `Intl.*`)
 - `autoFocus` without clear justification
+

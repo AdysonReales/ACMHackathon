@@ -40,3 +40,4 @@ Keep each fact in one owning file and use pointers from other files. If two file
 - **Root `README.md`**: Public setup and usage of the actual project.
 
 Before editing context files, decide which file owns each fact. After editing, scan for copied details that should be replaced by pointers.
+

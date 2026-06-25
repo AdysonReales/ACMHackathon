@@ -33,3 +33,4 @@ Conceptualize digital layouts as physical objects (e.g., an architectural bluepr
 
 ## 4. Interaction Physics
 * **Motion Physics:** Never use default `linear` or `ease-in-out` transitions. Animate exclusively via `transform` and `opacity` using spring physics to simulate physical mass.
+

@@ -49,3 +49,4 @@ These apply to every skill file in this repo:
 - **Rules, not prose:** Bullet points and formulas over paragraphs.
 - **No scatter:** Consolidate multi-file references into a single dense `SKILL.md`; avoid making the AI bounce between files.
 - **Never fabricate:** If data (testimonials, stats) doesn't exist, mark the section as optional.
+

@@ -71,3 +71,5 @@ Read `context/README.md` first. If private context such as `PROJECT_GUIDE.md`, `
 ## Optional AI Tool Adapters
 
 If an AI tool expects a special instruction file such as `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, or `.github/copilot-instructions.md`, keep that file thin. It should simply contain the relevant AI Start Prompt for your mode (listed above).
+
+
