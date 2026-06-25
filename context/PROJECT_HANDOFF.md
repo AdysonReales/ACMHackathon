@@ -21,54 +21,46 @@ Before updating this file, check whether the new fact belongs in another owner. 
 - Current state, risks, and next focus only: `context/PROJECT_HANDOFF.md`
 
 Use pointers for durable facts. Examples:
-
 - "Repository setup is documented in `README.md`."
-- "The active data-storage decision is in `context/DECISIONS.md`."
-- "Current design tokens are in `context/UI.md`."
-
-Do not copy the same repo URL, version number, dataset count, policy rule, setup command, or final wording into this file unless it is the current temporary state the next session must act on.
+- "The active game architecture decision is in `context/DECISIONS.md`."
+- "Current Y2K design tokens are in `context/UI.md`."
 
 ## Current State
 
 Working:
-
-- 
+- Architecture choice finalized: Mobile-responsive turn-based Web App (React + Vite + TypeScript).
+- UI design tokens, 80-10-5-5 layout scaling principles, and game rules locked down in `context/UI.md`.
+- Art assets pipeline configured to point exclusively to the absolute directory path `/assets/sprites/`.
 
 In progress:
-
-- 
+- Creating the core directory skeleton and setting up local system files.
 
 Blocked:
-
-- 
+- Generation of live API access configurations (Supabase endpoints and Deepgram credentials) to insert inside the upcoming secure `.env.local` file.
 
 ## Last Meaningful Changes
-
-- 
+- Abandoned the Google Chrome Extension concept to pursue a high-performance web dashboard layout to better scale on touchscreens and accommodate low-bandwidth constraints.
 
 ## Risks or Stale Facts
-
-- 
+- Native browser constraints require active secure contexts (`https://` or `localhost`) for microphone recording arrays to capture speech streams successfully on targeted mobile platforms.
 
 ## Verification Gaps
 
-<!-- What wasn't checked when this session ended. Next session: don't assume these are good. -->
-
-- 
+- Integration with real-time continuous streaming arrays via Deepgram has only been structured theoretically; data payload feedback under variable network connectivity hasn't been simulated.
 
 ## Next Focus
 
-1. 
-2. 
-3. 
+1. Initialize the Vite React workspace engine and integrate Tailwind CSS configs.
+2. Deliver the initial base pixel-art character sheets and template elements into `/assets/sprites/`.
+3. Scaffold the main turn state machine interface component (`CombatScreen.tsx`) executing the double-bezel containment structure.
 
 ## Closeout Checklist
 
-- Add major durable decisions to `context/DECISIONS.md`.
-- Update `context/PROJECT_GUIDE.md` if stable project rules changed.
-- Update `README.md` if public setup, usage, or behavior changed.
-- Remove or correct stale facts in touched files.
-- Replace duplicated durable facts with pointers to the owning file.
-- Scan for repeated high-risk facts such as repo URLs, release names, version numbers, dataset counts, environment paths, current status, public/private rules, and submission wording.
-- Record only the next useful state here, not a full session diary.
-- Verify with the lightest meaningful check and note any gaps.
+- [x] Add major durable decisions to `context/DECISIONS.md`.
+- [x] Update `context/PROJECT_GUIDE.md` if stable project rules changed.
+- [x] Update `README.md` if public setup, usage, or behavior changed.
+- [x] Remove or correct stale facts in touched files.
+- [x] Replace duplicated durable facts with pointers to the owning file.
+- [x] Scan for repeated high-risk facts such as repo URLs, release names, version numbers, dataset counts, environment paths, current status, public/private rules, and submission wording.
+- [x] Record only the next useful state here, not a full session diary.
+- [x] Verify with the lightest meaningful check and note any gaps.

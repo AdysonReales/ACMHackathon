@@ -14,25 +14,34 @@ Keep this file short. Update or remove obsolete rules instead of adding competin
 
 ## Project Snapshot
 
-- Project:
-- Users:
-- Goal:
-- Current stage:
-- Primary repository/app:
-- Non-goals:
+- **Project:** Proseso: Academic Showdown
+- **Users:** Filipino Students (Learners) & Speech Tech Researchers (Data Consumers)
+- **Goal:** Dual-merge hackathon submission (Theme 1 + Theme 2). A mobile-responsive, turn-based academic battle game that crowdsources and annotates Taglish speech datasets.
+- **Current stage:** Initial Architecture Setup & Core Loop Implementation
+- **Primary repository/app:** ACM--LarpTrip
+- **Non-goals:** Chrome Extension background workers, real-time continuous chat LLMs, procedural map generation.
 
 ## Tech Stack
 
-- Language(s):
-- Frontend:
-- Backend:
-- Database:
-- Infrastructure:
-- Key dependencies:
+- **Language(s):** TypeScript
+- **Frontend:** React (Vite) + Tailwind CSS (Mobile-first, responsive)
+- **Backend:** Serverless / Supabase Edge Functions (Single-pass JSON generation)
+- **Database:** Supabase (PostgreSQL for metadata, Storage Buckets for `.wav` files)
+- **Infrastructure:** Vercel (Hosting)
+- **Key dependencies:** Deepgram API (Speech-to-Text with `filler_words=true` flag)
+
+## Project Steps & Architecture
+
+1. **INTAKE:** Upload document file -> Server processes text chunk once.
+2. **ASSET PIPELINE:** Pixel-art assets are manually managed in `/assets/sprites/`; frontend strictly integrates them without modification.
+3. **COMPILE:** Formulate static level script array mapping arguments to correct evidence IDs.
+4. **COMBAT:** Execute local state turn machine for HP bars, card choices, and spring-physics screenshake FX.
+5. **VALIDATE:** Catch microphone input via Deepgram API -> Compute stutter penalties locally based on filler array keywords.
+6. **EXPORT:** Sync text transcripts and audio files to Supabase tables to generate an open-source dataset.
 
 ## Commit Format
 
-- Convention: (e.g. `feat: ...`, `fix: ...`, `chore: ...` — or leave blank if no format required)
+- **Convention:** `type: short description` (e.g., `feat: add stutter detection hook`, `art: add professor sprite`)
 
 ## Source Order
 
@@ -52,7 +61,6 @@ Use frontmatter in `context/*.md` for progressive disclosure:
 
 ```sh
 python3 scripts/context_map.py
-```
 
 Read file bodies only when `read_when` matches the task. Frontmatter routes attention; Markdown bodies remain the source of truth.
 
@@ -92,7 +100,7 @@ Use the lightest check that proves the work enough for its risk.
 Do not run expensive checks just to satisfy a ritual. If a useful check is skipped to save time or tokens, say so briefly in `PROJECT_HANDOFF.md` or the final note.
 
 ## Context Ownership
-
+a
 - Stable project rules and source order: `context/PROJECT_GUIDE.md`
 - Durable decisions and rationale: `context/DECISIONS.md`
 - Current state, blockers, verification gaps, and next focus: `context/PROJECT_HANDOFF.md`

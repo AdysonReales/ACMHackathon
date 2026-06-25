@@ -13,51 +13,69 @@ If a visual decision is architecturally significant, record it in `context/DECIS
 
 ## Aesthetic
 
-Direction: 
-Reference: 
+- **Direction:** Gamified Classroom meets Modern Mobile UI. 
+- **Reference:** Soft, friendly, card-based mobile interfaces (sky blues, mint greens, rounded corners) fused with crisp, nostalgic pixel-art sprites for the combat/learning sequences.
 
 ## Tokens
 
 ```css
 :root {
-  --bg:       ;   /* page background */
-  --surface:  ;   /* card / panel background */
-  --primary:  ;   /* main brand color */
-  --accent:   ;   /* highlights, links, decorative */
-  --text:     ;   /* primary text */
-  --muted:    ;   /* secondary / caption text */
-  --border:   ;   /* border / divider */
+  --bg: #eef2f6;       /* Page canvas: Soft notebook/sky blue */
+  --surface: #ffffff;  /* Card / panel background: Clean paper white */
+  --surface-hi: #f8fafc; /* Inner core screen: Slight off-white for nested content */
+  --primary: #2a9d8f;  /* Main brand color: Chalkboard/Mint Green */
+  --accent: #f4a261;   /* Highlights / Objections / Alerts: Highlighter Orange/Yellow */
+  --text: #1d3557;     /* Primary readable text: Deep navy/ink (softer than pure black) */
+  --muted: #8d99ae;    /* Secondary captions / metadata: Soft slate gray */
+  --border: #e2e8f0;   /* Structural lines / panels: Gentle light-gray dividers */
+  --shadow: 0 10px 25px -5px rgba(29, 53, 87, 0.05); /* Signature soft floating shadow */
 }
-```
+Type
+Font: Friendly, rounded Sans-serif (Nunito, Poppins, or Quicksand) for standard UI and readable dialogue. Crisp Monospace (JetBrains Mono or Space Mono) strictly isolated for game stats, HP, and turn metadata to contrast with the modern UI.
 
-## Type
+Scale: 12px (bottom nav labels/metadata) / 14px (secondary text) / 16px (body & dialogue) / 20px (card headers) / 24px (subheadings) / 32px (large screen titles)
 
-- Font:
-- Scale: (e.g. 12 / 14 / 16 / 20 / 28 / 40px)
-- Weight: (e.g. 400 body · 600 headings · 500 labels)
+Weight: 400 baseline body · 600 label layouts & nav · 700 to 800 (Extra Bold) for primary headings and "OBJECTION!" text.
 
-## Radius
+Radius
+Small: 8px (tags, monospace status badges)
 
-(Use 3 values only — e.g. 8px inputs · 16px cards · 9999px pills)
+Medium (Inner Core): 16px (nested images, inner battle screens)
 
-- Small:
-- Medium:
-- Full:
+Large (Outer Cards): 24px to 32px (main layout cards, floating overlapping containers)
 
-## Spacing
+Full: 9999px (floating action buttons, bottom nav indicators, primary CTAs)
 
-- Base unit: (e.g. 8px)
-- Scale: (e.g. 8 / 16 / 24 / 32 / 48 / 64px)
+Spacing
+Base unit: 8px
 
-## Rules
+Scale: 8px / 16px / 24px / 32px / 48px / 64px / 80px (for bottom nav clearance)
 
-<!-- Fill Tokens and Type above before treating these as active constraints. They record decisions made for this project, not defaults for every project. -->
+Rules
+1. The Mobile-First "Floating Card" Architecture
+Layout Structure: The web app must scale fluidly to mobile. Utilize a fixed, floating bottom navigation bar (containing Home, Schedule/Quizzes, Evidence Bag, Profile) on mobile viewports, which transitions into a vertical side-rail on desktop.
 
-1. **Double-Bezel Architecture:** Never place cards flat on the background. Nest an inner core inside an outer shell using mathematically concentric radii: outer radius -> inner radius at outer minus the shell padding (e.g., outer 24px -> inner 18px).
-2. **Hero Constraints:** H1 headlines must use wide containers to guarantee they flow in 2-3 lines max. Subtext must be under 20 words. BANNED: Eyebrow badges/pills above the H1 (e.g., 'Now in Public Beta', 'Beta', 'Launch'). Hero top padding must provide enough vertical breathing room under the nav.
-3. **Gapless Bento Layout:** All Bento Grids must be dense (`grid-flow-dense` / `grid-auto-flow: dense`) and mathematically aligned. Ban generic, symmetrical 3-column card rows.
-4. **Physical Interactions:** Primary buttons must use full-pill shapes. Nest trailing icons (e.g., `->`) in a circular background disc inside the button's right padding. Animate exclusively via transform and opacity using spring physics; no default ease-in-out.
-5. **Layout Breakouts:** Ban wrapping every section in the same rigid, centered container. Break the box: use full-bleed sections (e.g., edge-to-edge background dividers or infinite marquees) and asymmetric breakouts where one element bleeds completely to the edge of the screen while text remains aligned to the baseline.
-6. **Readability & Contrast:** Secondary text and ghost CTAs must remain legible. Avoid low-contrast grays that blend into the background. Use opacity-based coloring to guarantee WCAG AA contrast across light and dark modes.
-7. **Vertical Grid Alignment:** Multi-column layouts must align items vertically to prevent massive empty voids when one column's content is significantly shorter than the other's.
-8. **Display Leading & Tracking:** Large display headers (H1/H2) must use tight line-height and tight tracking to maintain visual cohesion and prevent lines from drifting apart.
+Overlapping Depth: Cards should not sit completely flat. Use the --shadow token to create a soft, elevated look. Elements (like the Professor pixel sprite or a 3D badge) should occasionally break out of their container's bounding box to create depth.
+
+2. Double-Bezel & Soft Nesting
+Card-in-Card: Emulate a friendly, structured classroom app by nesting content.
+
+Outer Container: rounded-[24px] bg-[var(--surface)] shadow-lg p-5
+
+Inner Content Area: rounded-[16px] bg-[var(--surface-hi)] p-4
+
+3. Pixel Art on Modern Canvas
+High-Contrast Asset Framing: Pixel-art sprites (Professor, Student, Evidence icons) must be rendered with image-rendering: pixelated;. To bridge the gap between the soft UI and the hard pixels, place pixel art on top of solid, softly rounded color blocks (e.g., placing the pixelated Professor sprite on a soft Mint Green or Sky Blue rounded pedestal card).
+
+4. Interactive & Combat Physics
+Tactile Buttons: Primary actions (like the "Book Now" or "Joined" pills from the references, adapted here to "OBJECTION!" or "Submit") must be large, full-pill shapes (rounded-full) with a clear drop shadow.
+
+Spring Animations: When a user taps a button or lands a correct academic counter-attack, bypass standard CSS transitions. Use spring-physics (e.g., Framer Motion in React) to make the cards bounce, scale down slightly on press, and snap back.
+
+5. Typographic & Color Restraint
+Colored Badges: Use soft, tinted backgrounds with highly saturated text for tags (e.g., a "Math Expert" tag uses a pale yellow background with deep orange text).
+
+Data Isolation: Keep the gamified Ace Attorney elements (HP Bars, Turn Counters) distinct from the learning UI by enforcing the Monospace font and wrapping them in technical, pill-shaped badges at the top of the combat cards.
+
+6. Gapless & Readable Grids
+Schedule & Route Mapping: For the "Map/Dungeon" or level selection screen, utilize overlapping nodes and soft pathway lines. Cards displaying topics (e.g., "Discrete Math Level 1") should stack neatly with consistent 16px gaps, utilizing horizontal scrolling (overflow-x-auto) for mobile-friendly carousels.
