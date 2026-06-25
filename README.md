@@ -52,5 +52,6 @@ This application successfully bridges both hackathon prompt tracks simultaneousl
 
 1. **Clone the Repository:**
    ```sh
-   git clone [https://github.com/AdysonReales/ACMHackathon.git](https://github.com/AdysonReales/ACMHackathon.git)
+   git clone https://github.com/AdysonReales/ACMHackathon.git
    cd ACMHackathon
+   ```
