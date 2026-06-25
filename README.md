@@ -1,6 +1,6 @@
 # PROSESO
 
-An AI-powered, mobile-responsive study companion web application that reimagines the high-stakes courtroom drama of *Ace Attorney* as a *Pokémon*-style turn-based academic thesis defense. 
+An AI-powered, mobile-responsive study companion web application turn-based academic student and professor exchange app. 
 
 ---
 
