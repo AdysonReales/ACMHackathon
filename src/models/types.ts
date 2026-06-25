@@ -62,6 +62,9 @@ export interface CombatState {
   phaseNumber: number
   totalPhases: number
   currentPhase: CombatPhase | undefined
+  streamingText: string
+  isGeneratingBackground: boolean
+  backgroundCompileError: string | null
 }
 
 export interface CombatActions {
