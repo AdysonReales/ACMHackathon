@@ -2,3 +2,7 @@ archives/
 experiment/
 landingpage/
 instructions.md
+.env
+.env.local
+node_modules/
+dist/
