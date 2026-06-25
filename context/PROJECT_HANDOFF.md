@@ -31,15 +31,17 @@ Working:
 - Architecture choice finalized: Mobile-responsive turn-based Web App (React + Vite + TypeScript).
 - UI design tokens, 80-10-5-5 layout scaling principles, and game rules locked down in `context/UI.md`.
 - Art assets pipeline configured to point exclusively to the absolute directory path `/assets/sprites/`.
+- Multi-page skeleton set up and running (Battle, Map, Evidence, Profile) with floating BottomNav.
+- Tailwind configs, Google Fonts, and TypeScript compile errors fixed. Build verified.
 
 In progress:
-- Creating the core directory skeleton and setting up local system files.
+- Initial state integration for CombatScreen.
 
 Blocked:
 - Generation of live API access configurations (Supabase endpoints and Deepgram credentials) to insert inside the upcoming secure `.env.local` file.
 
 ## Last Meaningful Changes
-- Abandoned the Google Chrome Extension concept to pursue a high-performance web dashboard layout to better scale on touchscreens and accommodate low-bandwidth constraints.
+- Overwrote corrupted package.json, installed dependencies, configured Tailwind integration, and scaffolded all initial pages.
 
 ## Risks or Stale Facts
 - Native browser constraints require active secure contexts (`https://` or `localhost`) for microphone recording arrays to capture speech streams successfully on targeted mobile platforms.
@@ -50,9 +52,8 @@ Blocked:
 
 ## Next Focus
 
-1. Initialize the Vite React workspace engine and integrate Tailwind CSS configs.
-2. Deliver the initial base pixel-art character sheets and template elements into `/assets/sprites/`.
-3. Scaffold the main turn state machine interface component (`CombatScreen.tsx`) executing the double-bezel containment structure.
+1. Implement full battle mechanics (HP reductions, screenshake physics, cards logic) in CombatScreen.
+2. Integrate microphone speech capturing and local Taglish stutter grading.
 
 ## Closeout Checklist
 
