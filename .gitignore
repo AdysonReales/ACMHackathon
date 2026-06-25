@@ -41,4 +41,6 @@ references/
 
 # Public repository context setup
 # Keep private AI/team context local.
-context/*
+context/
+scripts/
+skills/
