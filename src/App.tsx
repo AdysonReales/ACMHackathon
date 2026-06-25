@@ -8,25 +8,19 @@ import { ProfileScreen } from './pages/ProfileScreen'
 
 function App() {
   const [activePage, setActivePage] = useState<PageId>('combat')
-  const [customLevelData, setCustomLevelData] = useState<any>(null)
 
   const renderActivePage = () => {
     switch (activePage) {
       case 'combat':
-        return <CombatScreen customLevelData={customLevelData} />
+        return <CombatScreen />
       case 'schedule':
-        return (
-          <ScheduleScreen 
-            setCustomLevelData={setCustomLevelData} 
-            navigateToPage={setActivePage} 
-          />
-        )
+        return <ScheduleScreen />
       case 'evidence':
         return <EvidenceScreen />
       case 'profile':
         return <ProfileScreen />
       default:
-        return <CombatScreen customLevelData={customLevelData} />
+        return <CombatScreen />
     }
   }
 
