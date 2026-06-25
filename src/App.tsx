@@ -1,13 +1,16 @@
-import { useState } from 'react'
+// ============================================================
+// VIEW — App shell (layout + routing, zero business logic)
+// ============================================================
+
+import { useAppController } from './controllers/useAppController'
 import { BottomNav } from './components/BottomNav'
-import type { PageId } from './components/BottomNav'
 import { CombatScreen } from './pages/CombatScreen'
 import { ScheduleScreen } from './pages/ScheduleScreen'
 import { EvidenceScreen } from './pages/EvidenceScreen'
 import { ProfileScreen } from './pages/ProfileScreen'
 
 function App() {
-  const [activePage, setActivePage] = useState<PageId>('combat')
+  const { activePage, setActivePage } = useAppController()
 
   const renderActivePage = () => {
     switch (activePage) {

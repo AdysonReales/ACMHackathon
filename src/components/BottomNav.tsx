@@ -1,7 +1,10 @@
+// ============================================================
+// VIEW — BottomNav (pure presentational, types from model)
+// ============================================================
+
 import React from 'react'
 import { Swords, Map, Briefcase, User } from 'lucide-react'
-
-export type PageId = 'combat' | 'schedule' | 'evidence' | 'profile'
+import type { PageId } from '../models/types'
 
 interface BottomNavProps {
   activePage: PageId
