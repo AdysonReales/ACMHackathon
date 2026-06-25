@@ -3,26 +3,57 @@
 @tailwind utilities;
 
 :root {
-  --bg: #eef2f6;       /* Page canvas: Soft notebook/sky blue */
-  --surface: #ffffff;  /* Card / panel background: Clean paper white */
-  --surface-hi: #f8fafc; /* Inner core screen: Slight off-white for nested content */
-  --primary: #2a9d8f;  /* Main brand color: Chalkboard/Mint Green */
-  --accent: #f4a261;   /* Highlights / Objections / Alerts: Highlighter Orange/Yellow */
-  --text: #1d3557;     /* Primary readable text: Deep navy/ink (softer than pure black) */
-  --muted: #8d99ae;    /* Secondary captions / metadata: Soft slate gray */
-  --border: #e2e8f0;   /* Structural lines / panels: Gentle light-gray dividers */
-  --shadow: 0 10px 25px -5px rgba(29, 53, 87, 0.05); /* Signature soft floating shadow */
+  --bg: #eef2f6;
+  --surface: #ffffff;
+  --surface-hi: #f8fafc;
+  --primary: #2a9d8f;
+  --accent: #f4a261;
+  --text: #1d3557;
+  --muted: #8d99ae;
+  --border: #e2e8f0;
+  /* Reduced shadow intensity for better mobile performance */
+  --shadow: 0 4px 6px -1px rgba(29, 53, 87, 0.05); 
 }
 
-body {
-  background-color: var(--bg);
-  color: var(--text);
-  margin: 0;
-  font-family: 'Nunito', 'Poppins', 'Quicksand', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+@layer base {
+  html {
+    /* Prevents the user from accidentally zooming in on mobile */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+    /* Essential for mobile: prevents overscroll bounce on pull-to-refresh */
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
 }
 
-/* For pixelated rendering of sprites */
+@layer utilities {
+  /* Helper to ensure content respects iPhone 'notches' */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Prevents text selection during rapid tapping */
+  .no-select {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
 .pixelated {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+}
+
+/* Fix for mobile text input zoom-on-focus */
+@media screen and (max-width: 767px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
 }

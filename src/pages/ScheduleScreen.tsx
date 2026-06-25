@@ -20,95 +20,49 @@ export const ScheduleScreen: React.FC = () => {
   ])
 
   return (
-    <div className="w-full max-w-lg mx-auto pb-clearance pt-4 px-4 flex flex-col gap-6">
-      {/* Header */}
-      <div className="bg-[var(--surface)] p-4 rounded-large shadow-custom border border-[var(--border)]">
-        <h1 className="text-xl font-bold tracking-tight text-[var(--text)]">Academic Learning Map</h1>
-        <p className="text-xs text-[var(--muted)]">Defeat academic rivals to unlock milestones. Upload docs in Battle tab!</p>
+    <div className="w-full max-w-lg mx-auto pt-8 px-4 flex flex-col gap-6 pb-12 font-['Space_Grotesk']">
+      
+      {/* Header Panel */}
+      <div className="bg-[#e6e8ea] border-2 border-[#00236f] p-5 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,35,111,1)]">
+        <h1 className="text-xl font-bold uppercase tracking-widest text-[#00236f]">Academic Map</h1>
+        <p className="text-xs font-bold text-[#545560] mt-1">Defeat examiners to unlock new case files.</p>
       </div>
 
-      {/* Map Nodes */}
-      <div className="bg-[var(--surface)] rounded-large shadow-custom p-6 border border-[var(--border)] relative overflow-hidden flex flex-col gap-6">
-        <div className="relative flex flex-col items-center gap-12 py-4">
-          {/* Vertical pathway line */}
-          <div className="absolute top-8 bottom-8 left-1/2 -translate-x-1/2 w-1.5 bg-slate-200 rounded-full z-0">
-            <div className="h-[40%] bg-[var(--primary)] rounded-full"></div>
-          </div>
+      {/* Map Nodes Container */}
+      <div className="bg-[#f2f4f6] border-2 border-[#00236f] rounded-lg p-6 relative">
+        <div className="relative flex flex-col items-center gap-8 py-2">
+          
+          {/* Pathway Line */}
+          <div className="absolute top-10 bottom-10 left-1/2 -translate-x-1/2 w-3 bg-[#cbd5e1] border-2 border-[#757682] z-0"></div>
 
           {levels.map((lvl, index) => {
             const isCompleted = lvl.status === 'completed'
             const isActive = lvl.status === 'active'
-            const isLeft = index % 2 === 0
 
             return (
-              <div
-                key={lvl.id}
-                className={`relative flex items-center w-full z-10 ${
-                  isLeft ? 'flex-row' : 'flex-row-reverse'
-                }`}
-              >
-                {/* Node bubble */}
-                <div className="w-[40%] flex justify-center">
-                  <div
-                    className={`w-14 h-14 rounded-full flex items-center justify-center border-4 shadow-md transition-all ${
-                      isCompleted
-                        ? 'bg-[var(--primary)] border-emerald-200 text-white scale-105'
-                        : isActive
-                        ? 'bg-[var(--accent)] border-amber-200 text-white animate-bounce scale-110'
-                        : 'bg-slate-100 border-slate-200 text-slate-400'
-                    }`}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle2 size={24} />
-                    ) : isActive ? (
-                      <Play size={24} className="fill-white pl-0.5" />
-                    ) : (
-                      <Lock size={20} />
-                    )}
-                  </div>
+              <div key={lvl.id} className="relative flex items-center justify-between w-full z-10 gap-4">
+                
+                {/* Node Bubble */}
+                <div className={`w-14 h-14 border-2 border-[#00236f] flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,35,111,1)] ${
+                  isCompleted ? 'bg-emerald-400' : isActive ? 'bg-amber-400 animate-pulse' : 'bg-[#e6e8ea]'
+                }`}>
+                  {isCompleted ? <CheckCircle2 size={24} className="text-[#00236f]" /> : 
+                   isActive ? <Play size={24} className="text-[#00236f] fill-[#00236f]" /> : 
+                   <Lock size={20} className="text-[#757682]" />}
                 </div>
 
-                <div className="w-[10%]"></div>
-
-                {/* Level card */}
-                <div className="w-[50%]">
-                  <div
-                    className={`p-3 rounded-medium border transition-all ${
-                      isCompleted
-                        ? 'bg-slate-50 border-slate-200 opacity-80 hover:opacity-100'
-                        : isActive
-                        ? 'bg-[var(--surface-hi)] border-[var(--primary)] shadow-md'
-                        : 'bg-slate-50/50 border-slate-100 opacity-60'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start gap-1">
-                      <span className="text-[9px] font-mono font-bold tracking-wider text-[var(--muted)] uppercase">
-                        LEVEL {lvl.id}
-                      </span>
-                      <span
-                        className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${
-                          lvl.difficulty === 'Basic'
-                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                            : lvl.difficulty === 'Medium'
-                            ? 'bg-amber-50 text-amber-600 border border-amber-100'
-                            : 'bg-rose-50 text-rose-600 border border-rose-100'
-                        }`}
-                      >
-                        {lvl.difficulty}
-                      </span>
-                    </div>
-
-                    <h3 className="font-bold text-xs text-[var(--text)] mt-1">{lvl.title}</h3>
-                    <p className="text-[10px] text-[var(--muted)]">{lvl.subject}</p>
-
-                    {isCompleted && (
-                      <div className="flex items-center gap-0.5 mt-2 text-amber-500">
-                        {[...Array(3)].map((_, i) => (
-                          <Star key={i} size={10} className="fill-amber-500" />
-                        ))}
-                      </div>
-                    )}
+                {/* Level Card */}
+                <div className={`flex-1 p-4 border-2 rounded-lg ${
+                  isActive 
+                    ? 'bg-[#b6c4ff] border-[#00236f] shadow-[4px_4px_0px_0px_rgba(0,35,111,1)]' 
+                    : 'bg-white border-[#757682] shadow-[2px_2px_0px_0px_rgba(117,118,130,0.5)]'
+                }`}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-bold text-[#757682] uppercase">Lv.{lvl.id}</span>
+                    <span className="text-[10px] font-bold text-amber-600 uppercase">{lvl.difficulty}</span>
                   </div>
+                  <h3 className="font-bold text-[#191c1e] text-sm">{lvl.title}</h3>
+                  <p className="text-[10px] font-bold text-[#545560] uppercase">{lvl.subject}</p>
                 </div>
               </div>
             )

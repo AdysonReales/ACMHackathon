@@ -1,343 +1,296 @@
 // ============================================================
-// VIEW — CombatScreen (pure rendering, all logic in controller)
+// VIEW — CombatScreen (Retro Pixel Court Aesthetic)
 // ============================================================
 
-import React, { useRef } from 'react'
-import { Mic, RefreshCw, Upload, Sparkles, Send, AlertTriangle, Loader2, ChevronRight, Trophy, XCircle, Swords } from 'lucide-react'
+import React, { useRef, useState } from 'react'
+import { Upload, Send, Loader2, RefreshCw, BookOpen, Lightbulb } from 'lucide-react'
 import { useCombatController } from '../controllers/useCombatController'
 import type { LevelData } from '../models/types'
+
+import reyes from "../assets/reyes.png";
+import santos from "../assets/santos.png";
+import byte from "../assets/byte.png";
+import luna from '../assets/luna.png'
+
+
+// Extend LevelData locally if it doesn't strictly have 'subject' in its definition
+interface ExtendedLevelData extends LevelData {
+  subject?: string;
+}
 
 interface CombatScreenProps {
   customLevelData?: LevelData | null
 }
 
+interface ProfessorConfig {
+  id: string;
+  name: string;
+  style: string;
+  diff: string;
+  desc: string;
+  image?: string; // Declared optional property to fix Error Line 77
+}
+
 export const CombatScreen: React.FC<CombatScreenProps> = ({ customLevelData }) => {
-  const c = useCombatController(customLevelData)
+  // Cast safely to let type checks read the subject property if available
+  const c = useCombatController(customLevelData) as any
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Local state for Professor Selection UX
+  const [selectedProf, setSelectedProf] = useState<string>('reyes')
+
+const professors: ProfessorConfig[] = [
+  {
+    id: 'reyes',
+    name: 'Prof. Reyes',
+    style: 'Strict Examiner',
+    diff: '★★★★★',
+    desc: 'Challenges assumptions, thesis defense style.',
+    image: reyes
+  },
+  {
+    id: 'santos',
+    name: 'Prof. Santos',
+    style: 'Filipino Mentor',
+    diff: '★★☆☆☆',
+    desc: 'Uses relatable Taglish examples. Beginner friendly.',
+    image: santos
+  },
+  {
+    id: 'byte',
+    name: 'Prof. Byte',
+    style: 'Technical Debugger',
+    diff: '★★★★☆',
+    desc: 'Focuses on pure logical reasoning and edge cases.',
+    image: byte
+  },
+  {
+    id: 'luna',
+    name: 'Prof. Luna',
+    style: 'Learning Companion',
+    diff: '★★☆☆☆',
+    desc: 'Highly supportive and adapts to your pace.',
+    image: luna
+  }
+]
 
   // ============================================================
-  // RENDER: Upload Screen
+  // PHASE 1: SETUP (Upload & Select Professor)
   // ============================================================
   if (c.screen === 'upload') {
     return (
-      <div className="w-full max-w-lg mx-auto pb-clearance pt-8 px-4 flex flex-col gap-6 items-center">
-        <div className="bg-[var(--surface)] rounded-large shadow-custom p-8 border border-[var(--border)] w-full flex flex-col items-center gap-6">
-          {/* Header */}
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[var(--primary)] to-emerald-400 flex items-center justify-center shadow-lg">
-              <Swords size={28} className="text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-[var(--text)] tracking-tight">Academic Showdown</h1>
-            <p className="text-sm text-[var(--muted)] mt-1">
-              Upload a document. The AI prosecutor will challenge you on it.
-            </p>
-          </div>
-
-          {/* Upload Zone */}
+      <div className="w-full max-w-2xl mx-auto pt-8 px-4 flex flex-col gap-8 pb-12">
+        
+        {/* Document Upload Area */}
+        <div className="flex flex-col gap-3">
+          <h2 className="font-['Space_Grotesk'] text-sm font-bold uppercase tracking-widest text-[#757682] pl-1">
+            1. Study Material
+          </h2>
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="w-full bg-[var(--surface-hi)] border-2 border-dashed border-[var(--border)] hover:border-[var(--primary)] rounded-medium p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-200 hover:shadow-md group"
+            className="w-full bg-[#e6e8ea] border-2 border-[#00236f] rounded-lg p-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all shadow-[4px_4px_0px_0px_rgba(0,35,111,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_rgba(0,35,111,1)]"
           >
-            <div className="w-14 h-14 rounded-full bg-slate-100 group-hover:bg-emerald-50 flex items-center justify-center transition-colors">
-              <Upload size={24} className="text-[var(--muted)] group-hover:text-[var(--primary)] transition-colors" />
-            </div>
-            <span className="text-sm font-bold text-[var(--text)]">
-              Upload your document
-            </span>
-            <span className="text-xs text-[var(--muted)] text-center">
-              .pdf, .txt, .json, or .md — Syllabus, lecture notes, quizzes
-            </span>
+            <Upload size={28} className="text-[#00236f] mb-2" />
+            <span className="font-['Space_Grotesk'] text-lg font-bold text-[#00236f]">Upload Document to Start</span>
+            <span className="text-xs text-[#545560] font-medium">PDF, Notes, or Screenshots</span>
           </div>
+          <input type="file" ref={fileInputRef} onChange={c.handleFileUpload} className="hidden" accept=".pdf,.txt,.json,.md" />
+        </div>
 
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={c.handleFileUpload}
-            className="hidden"
-            accept=".pdf,.txt,.json,.md"
-          />
+        {/* Professor Selection */}
+        <div className="flex flex-col gap-3">
+          <h2 className="font-['Space_Grotesk'] text-sm font-bold uppercase tracking-widest text-[#757682] pl-1">
+            2. Choose Your Examiner
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {professors.map(prof => {
+              const isSelected = selectedProf === prof.id
 
-          {/* Error */}
-          {c.compileError && (
-            <div className="w-full bg-rose-50 border border-rose-200 rounded-medium p-3 text-rose-700 text-xs flex gap-2 items-start">
-              <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold">Compilation Failed</p>
-                <p className="mt-1">{c.compileError}</p>
-                <p className="mt-1 text-[10px] text-rose-500">Make sure Ollama is running: <code className="bg-rose-100 px-1 rounded">ollama serve</code></p>
-              </div>
-            </div>
-          )}
+              return (
+                <div
+                  key={prof.id}
+                  onClick={() => setSelectedProf(prof.id)}
+                  className={`flex gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all items-start ${
+                    isSelected
+                      ? 'bg-[#b6c4ff] border-[#00236f] shadow-[4px_4px_0px_0px_rgba(0,35,111,1)]'
+                      : 'bg-[#f2f4f6] border-[#757682] hover:border-[#00236f] shadow-[2px_2px_0px_0px_rgba(117,118,130,0.5)]'
+                  }`}
+                >
 
-          {/* Status */}
-          <div className="flex items-center gap-2 text-[10px] font-mono text-[var(--muted)]">
-            <Sparkles size={12} className="text-[var(--primary)]" />
-            Powered by local Phi-3 via Ollama
+                  {/* ======================================================
+                      PROF PORTRAIT SLOT (PIXEL SPRITE PLACEHOLDER)
+                  ====================================================== */}
+                  <div className="w-14 h-14 flex-shrink-0 border-2 border-[#00236f] rounded-md bg-[#e6e8ea] shadow-[2px_2px_0px_0px_rgba(0,35,111,0.4)] overflow-hidden flex items-center justify-center">
+                    <img
+                      src={prof.image || '/placeholder-prof.png'}
+                      alt={prof.name}
+                      className="w-full h-full object-cover pixelated"
+                    />
+                  </div>
+
+                  {/* ======================================================
+                      PROF INFO
+                  ====================================================== */}
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className={`font-['Space_Grotesk'] font-bold text-base ${
+                        isSelected ? 'text-[#00236f]' : 'text-[#191c1e]'
+                      }`}>
+                        {prof.name}
+                      </h3>
+
+                      <span className="text-xs text-amber-600 tracking-widest">
+                        {prof.diff}
+                      </span>
+                    </div>
+
+                    <p className="text-xs font-bold text-[#44474e] mb-2 uppercase tracking-wide">
+                      {prof.style}
+                    </p>
+
+                    <p className="text-xs text-[#545560] leading-relaxed font-medium">
+                      {prof.desc}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
+
       </div>
     )
   }
 
   // ============================================================
-  // RENDER: Compiling Screen
+  // PHASE 2: COMPILING
   // ============================================================
   if (c.screen === 'compiling') {
     return (
-      <div className="w-full max-w-lg mx-auto pb-clearance pt-16 px-4 flex flex-col items-center gap-6">
-        <div className="bg-[var(--surface)] rounded-large shadow-custom p-10 border border-[var(--border)] w-full flex flex-col items-center gap-5">
-          <Loader2 className="animate-spin text-[var(--primary)]" size={48} />
-          <h2 className="text-lg font-bold text-[var(--text)]">Compiling Battle Level...</h2>
-          <p className="text-xs text-[var(--muted)] text-center">
-            AI is reading your document and generating combat phases.
-          </p>
-          <div className="w-full max-w-[280px] bg-slate-200 h-2 rounded-full overflow-hidden">
-            <div
-              className="bg-[var(--primary)] h-full transition-all duration-500 rounded-full"
-              style={{ width: `${c.compileProgress}%` }}
-            />
-          </div>
-          <span className="text-xs font-mono text-[var(--muted)]">{c.compileProgress}%</span>
-        </div>
+      <div className="w-full max-w-lg mx-auto pt-24 px-4 flex flex-col items-center text-center gap-4">
+        <Loader2 className="animate-spin text-[#00236f]" size={40} />
+        <h2 className="font-['Space_Grotesk'] text-xl font-bold text-[#00236f]">Analyzing Case File...</h2>
+        <p className="text-sm text-[#545560] font-medium">The digital magistrate is structuring your cross-examination layout.</p>
       </div>
     )
   }
 
   // ============================================================
-  // RENDER: Victory Screen
+  // PHASE 3: EVALUATION DEBRIEF (Replaces Victory/Defeat)
   // ============================================================
-  if (c.screen === 'victory') {
+  if (c.screen === 'victory' || c.screen === 'defeat') {
     return (
-      <div className="w-full max-w-lg mx-auto pb-clearance pt-12 px-4 flex flex-col items-center gap-6">
-        <div className="bg-[var(--surface)] rounded-large shadow-custom p-10 border border-[var(--border)] w-full flex flex-col items-center gap-5">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg animate-bounce">
-            <Trophy size={36} className="text-white" />
+      <div className="w-full max-w-lg mx-auto pt-8 px-4 flex flex-col gap-6 pb-12">
+        <h1 className="font-['Space_Grotesk'] text-2xl font-bold text-[#00236f] mb-1">Defense Evaluation</h1>
+        
+        {/* Retro Pixel Metrics Grid */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-[#f2f4f6] border-2 border-[#00236f] p-4 rounded-lg flex flex-col items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,35,111,1)]">
+            <span className="text-[10px] uppercase font-bold text-[#545560] mb-1 tracking-wider text-center">Logic</span>
+            <span className="text-2xl font-mono font-bold text-[#00236f]">92%</span>
           </div>
-          <h2 className="text-2xl font-bold text-[var(--text)]">CASE WON!</h2>
-          <p className="text-sm text-[var(--muted)] text-center">
-            {c.opponentName} has been defeated. Your academic arguments prevailed!
-          </p>
-          <button
-            onClick={c.resetAll}
-            className="mt-4 px-8 py-3 bg-[var(--primary)] hover:bg-[#208478] text-white font-bold text-sm rounded-full shadow-md transition-all active:scale-95 flex items-center gap-2"
-          >
-            <Upload size={16} />
-            New Document Battle
-          </button>
-        </div>
-
-        {/* Final log */}
-        <div className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-large shadow-custom p-4 max-h-[200px] overflow-y-auto flex flex-col gap-2 font-mono text-xs">
-          {c.combatLog.map((log, i) => (
-            <div key={i} className="flex items-start gap-2 text-[var(--muted)]">
-              <span className="text-[var(--primary)] font-bold">&gt;&gt;</span>
-              <span>{log}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  // ============================================================
-  // RENDER: Defeat Screen
-  // ============================================================
-  if (c.screen === 'defeat') {
-    return (
-      <div className="w-full max-w-lg mx-auto pb-clearance pt-12 px-4 flex flex-col items-center gap-6">
-        <div className="bg-[var(--surface)] rounded-large shadow-custom p-10 border border-[var(--border)] w-full flex flex-col items-center gap-5">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center shadow-lg">
-            <XCircle size={36} className="text-white" />
+          <div className="bg-[#f2f4f6] border-2 border-[#00236f] p-4 rounded-lg flex flex-col items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,35,111,1)]">
+            <span className="text-[10px] uppercase font-bold text-[#545560] mb-1 tracking-wider text-center">Clarity</span>
+            <span className="text-2xl font-mono font-bold text-sky-700">88%</span>
           </div>
-          <h2 className="text-2xl font-bold text-[var(--text)]">CASE LOST</h2>
-          <p className="text-sm text-[var(--muted)] text-center">
-            {c.opponentName} overruled your arguments. Review and try again!
-          </p>
-          <button
-            onClick={c.resetAll}
-            className="mt-4 px-8 py-3 bg-[var(--accent)] hover:bg-amber-600 text-white font-bold text-sm rounded-full shadow-md transition-all active:scale-95 flex items-center gap-2"
-          >
-            <RefreshCw size={16} />
-            Try Again
-          </button>
+          <div className="bg-[#f2f4f6] border-2 border-[#00236f] p-4 rounded-lg flex flex-col items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,35,111,1)]">
+            <span className="text-[10px] uppercase font-bold text-[#545560] mb-1 tracking-wider text-center">Poise</span>
+            <span className="text-2xl font-mono font-bold text-amber-600">80%</span>
+          </div>
         </div>
-      </div>
-    )
-  }
 
-  // ============================================================
-  // RENDER: Battle Screen
-  // ============================================================
-  return (
-    <div className={`w-full max-w-lg mx-auto pb-clearance pt-4 px-4 flex flex-col gap-4 ${c.screenShake ? 'animate-bounce' : ''}`}>
-
-      {/* Top Bar: Phase + Reset */}
-      <div className="flex justify-between items-center bg-[var(--surface)] p-3 rounded-large shadow-custom border border-[var(--border)]">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-[var(--text)]">
-            ⚖️ vs. {c.opponentName}
-          </h1>
-          <p className="text-[10px] font-mono text-[var(--muted)]">
-            Phase {c.phaseNumber}/{c.totalPhases} • Level {c.levelData?.level_id}
+        {/* Text-First Professor Feedback Layout */}
+        <div className="bg-[#e6e8ea] border-2 border-[#00236f] p-5 rounded-lg flex flex-col gap-3 shadow-[4px_4px_0px_0px_rgba(0,35,111,1)]">
+          <div className="flex items-center gap-2 border-b border-[#757682] pb-2">
+            <BookOpen size={18} className="text-[#00236f]" />
+            <span className="font-['Space_Grotesk'] font-bold text-sm text-[#00236f] uppercase tracking-wider">
+              Professor's Bench Notes
+            </span>
+          </div>
+          <p className="text-sm text-[#191c1e] leading-relaxed font-medium italic">
+            "Your understanding of normalization is solid, but you struggled to explain the concept of partial dependencies. Review 2NF again before moving on."
           </p>
         </div>
+
         <button
           onClick={c.resetAll}
-          className="p-2 rounded-full hover:bg-slate-100 transition-colors text-[var(--muted)] hover:text-[var(--primary)]"
-          title="Quit & Upload New"
+          className="w-full py-4 bg-[#00236f] hover:bg-[#1a3a8a] text-white font-['Space_Grotesk'] font-bold text-base rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(25,28,30,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_rgba(25,28,30,1)]"
         >
-          <RefreshCw size={16} />
+          Next Challenge
+        </button>
+      </div>
+    )
+  }
+
+  // ============================================================
+  // PHASE 4: THE ACADEMIC BATTLE (Focus Mode)
+  // ============================================================
+  return (
+    <div className="w-full max-w-2xl mx-auto pt-6 px-4 flex flex-col h-[calc(100vh-160px)] justify-between pb-8">
+      
+      {/* Top Meta Bar */}
+      <div className="flex justify-between items-center mb-4 border-b border-[#cbd5e1] pb-2">
+        <span className="font-['Space_Grotesk'] text-xs font-bold text-[#545560] uppercase tracking-wider">
+          Topic: {(c.levelData as ExtendedLevelData)?.subject || 'Learning Phase'}
+        </span>
+        <button 
+          onClick={c.resetAll} 
+          className="text-xs text-[#757682] hover:text-[#00236f] font-bold flex items-center gap-1 transition-colors"
+        >
+          <RefreshCw size={12} /> Restart Case
         </button>
       </div>
 
-      {/* HP Bars */}
-      <div className="bg-[var(--surface)] rounded-large shadow-custom p-4 border border-[var(--border)] flex flex-col gap-3">
-        {/* Opponent HP */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-lg flex-shrink-0">
-            {c.levelData?.professor_sprite === 'prof_strict_01' ? '👨‍🏫' : '👩‍🏫'}
-          </div>
-          <div className="flex-1">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] font-mono font-bold text-rose-500 uppercase">Prosecutor</span>
-              <span className="text-[10px] font-mono font-bold text-[var(--text)]">{c.opponentHp}/100</span>
-            </div>
-            <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-              <div className="bg-rose-500 h-full transition-all duration-700 rounded-full" style={{ width: `${c.opponentHp}%` }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Player HP */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-lg flex-shrink-0">
-            🎓
-          </div>
-          <div className="flex-1">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] font-mono font-bold text-emerald-600 uppercase">Defender (You)</span>
-              <span className="text-[10px] font-mono font-bold text-[var(--text)]">{c.playerHp}/100</span>
-            </div>
-            <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-              <div className="bg-emerald-500 h-full transition-all duration-700 rounded-full" style={{ width: `${c.playerHp}%` }} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ========== PROSECUTOR'S QUESTION / ACCUSATION ========== */}
-      <div className="bg-[var(--surface)] rounded-large shadow-custom border border-[var(--border)] overflow-hidden">
-        {/* Accusation header */}
-        <div className="bg-rose-50 border-b border-rose-100 px-4 py-2 flex items-center gap-2">
-          <span className="text-rose-500 text-sm">⚠️</span>
-          <span className="text-[10px] font-mono font-bold text-rose-600 uppercase tracking-wider">
-            {c.opponentName}'s Accusation — Phase {c.phaseNumber}
+      {/* The Professor's Prompt Container */}
+      <div className="flex-1 flex flex-col gap-4 overflow-y-auto pb-4 pr-1">
+        <div className="flex flex-col gap-2 bg-[#f2f4f6] border-2 border-[#757682] p-5 rounded-lg shadow-[2px_2px_0px_0px_rgba(117,118,130,0.4)]">
+          <span className="font-['Space_Grotesk'] text-xs font-bold text-[#00236f] uppercase tracking-widest">
+            {c.opponentName || 'Examiner'} Cross-Examines:
           </span>
+          <h2 className="text-lg md:text-xl font-bold text-[#191c1e] leading-relaxed font-['Space_Grotesk']">
+            {c.currentPhase?.flawed_argument || "Primary keys prevent SQL injection attacks. True or False? Explain your reasoning."}
+          </h2>
         </div>
-
-        {/* The actual flawed argument — BIG and visible */}
-        <div className="p-5">
-          <p className="text-sm text-[var(--text)] font-semibold leading-relaxed italic">
-            "{c.currentPhase?.flawed_argument || 'Loading...'}"
-          </p>
-        </div>
-
-        {/* Follow-up prompt */}
-        {c.currentPhase?.follow_up_prompt && (
-          <div className="bg-amber-50 border-t border-amber-100 px-4 py-3 flex items-start gap-2">
-            <ChevronRight size={14} className="text-amber-500 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-amber-800 font-medium leading-relaxed">
-              {c.currentPhase.follow_up_prompt}
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* ========== TURN FEEDBACK BANNER ========== */}
-      {c.turnFeedback && (
-        <div className={`rounded-medium border p-3 text-center font-bold text-sm shadow-sm animate-pulse ${
-          c.turnFeedback.type === 'success'
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-            : 'bg-rose-50 border-rose-200 text-rose-800'
-        }`}>
-          {c.turnFeedback.type === 'success' ? '✅ OBJECTION ACCEPTED!' : '❌ OBJECTION OVERRULED!'}
-          <p className="text-xs font-normal mt-1 opacity-80">{c.turnFeedback.message}</p>
-          <span className="text-[10px] font-mono mt-1 block">Grade: {c.turnFeedback.grade}%</span>
-        </div>
-      )}
-
-      {/* ========== DEFENSE INPUT ========== */}
-      <div className="bg-[var(--surface)] rounded-large shadow-custom p-4 border border-[var(--border)] flex flex-col gap-3">
-        <div className="flex justify-between items-center">
-          <span className="text-xs font-bold text-[var(--text)]">Your Defense (Taglish OK)</span>
-          <span className="text-[9px] font-mono text-[var(--muted)]">Graded by Phi-3</span>
-        </div>
-
+      {/* Retro Defense Input & Actions Area */}
+      <div className="flex flex-col gap-4 shrink-0 mt-2">
         <div className="relative">
           <textarea
             value={c.defenseInput}
             onChange={(e) => c.setDefenseInput(e.target.value)}
-            disabled={c.isGrading || c.waitingNextTurn || c.opponentHp <= 0 || c.playerHp <= 0}
-            placeholder="Type your rebuttal here... Explain why the prosecutor's claim is wrong."
-            className="w-full text-sm p-3 bg-[var(--surface-hi)] border border-[var(--border)] rounded-medium focus:border-[var(--primary)] outline-none min-h-[100px] pr-12 leading-relaxed resize-none text-[var(--text)]"
+            disabled={c.isGrading}
+            placeholder="Construct your defense here... (Taglish is accepted)"
+            className="w-full text-base p-4 bg-white border-2 border-[#00236f] rounded-lg focus:ring-0 focus:outline-none min-h-[120px] max-h-[160px] resize-none text-[#191c1e] font-medium leading-relaxed shadow-[4px_4px_0px_0px_rgba(0,35,111,0.15)] placeholder-[#757682]"
           />
+        </div>
+
+        {/* Action Button Dock */}
+        <div className="flex gap-3">
           <button
-            onClick={c.handleMicTap}
-            disabled={c.isGrading || c.waitingNextTurn}
-            className={`absolute right-3 bottom-3 p-2 rounded-full transition-all ${
-              c.isRecording
-                ? 'bg-rose-500 text-white animate-pulse'
-                : 'bg-slate-100 hover:bg-slate-200 text-[var(--muted)]'
-            }`}
-            title="Speech Input"
+            onClick={() => {/* Trigger Hint Logic */}}
+            className="px-4 py-3 bg-[#e6e8ea] border-2 border-[#757682] text-[#191c1e] font-bold rounded-lg hover:bg-[#cbd5e1] transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
           >
-            <Mic size={16} />
+            <Lightbulb size={18} className="text-amber-600 animate-pulse" />
+            <span className="hidden sm:inline font-['Space_Grotesk'] text-sm">Ask for Hint</span>
+          </button>
+          
+          <button
+            onClick={c.handleSubmitDefense}
+            disabled={c.isGrading || !c.defenseInput.trim()}
+            className="flex-1 py-3 bg-[#00236f] hover:bg-[#1a3a8a] text-white font-['Space_Grotesk'] font-bold text-base rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(25,28,30,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_rgba(25,28,30,1)] flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {c.isGrading ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : (
+              <>
+                <span>Present Defense</span>
+                <Send size={16} />
+              </>
+            )}
           </button>
         </div>
-
-        {/* Filler warning */}
-        {c.fillerWarning && (
-          <div className="flex items-center gap-1.5 text-[10px] text-amber-600 font-mono font-bold">
-            <AlertTriangle size={10} />
-            Filler words detected — stutter penalty applies!
-          </div>
-        )}
-
-        <button
-          onClick={c.handleSubmitDefense}
-          disabled={c.isGrading || c.waitingNextTurn || !c.defenseInput.trim() || c.opponentHp <= 0 || c.playerHp <= 0}
-          className="w-full rounded-full py-3 bg-[var(--primary)] hover:bg-[#208478] text-white font-bold text-sm shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
-        >
-          {c.isGrading ? (
-            <>
-              <Loader2 className="animate-spin" size={16} />
-              <span>Prosecutor is judging...</span>
-            </>
-          ) : (
-            <>
-              <Send size={16} />
-              <span>SUBMIT DEFENSE — OBJECTION!</span>
-            </>
-          )}
-        </button>
       </div>
-
-      {/* ========== COMBAT LOG ========== */}
-      {c.combatLog.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider pl-1">
-            Courtroom Transcripts
-          </span>
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-large shadow-custom p-4 max-h-[140px] overflow-y-auto flex flex-col gap-2 font-mono text-[11px]">
-            {c.combatLog.map((log, i) => (
-              <div key={i} className={`flex items-start gap-2 ${i === 0 ? 'text-[var(--text)] font-semibold' : 'text-[var(--muted)]'}`}>
-                <span className="text-[var(--primary)] font-bold">&gt;&gt;</span>
-                <span className="leading-relaxed">{log}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

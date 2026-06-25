@@ -1,9 +1,9 @@
 // ============================================================
-// VIEW — BottomNav (pure presentational, types from model)
+// VIEW — BottomNav (Minimalist UI)
 // ============================================================
 
 import React from 'react'
-import { Swords, Map, Briefcase, User } from 'lucide-react'
+import { BookOpen, Map, Library, User } from 'lucide-react'
 import type { PageId } from '../models/types'
 
 interface BottomNavProps {
@@ -13,15 +13,15 @@ interface BottomNavProps {
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activePage, setActivePage }) => {
   const navItems = [
-    { id: 'combat' as PageId, label: 'Battle', icon: Swords },
-    { id: 'schedule' as PageId, label: 'Map', icon: Map },
-    { id: 'evidence' as PageId, label: 'Evidence', icon: Briefcase },
+    { id: 'combat' as PageId, label: 'Learn', icon: BookOpen },
+    { id: 'schedule' as PageId, label: 'Path', icon: Map },
+    { id: 'evidence' as PageId, label: 'Library', icon: Library },
     { id: 'profile' as PageId, label: 'Profile', icon: User },
   ]
 
   return (
-    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[var(--surface)] border border-[var(--border)] rounded-full p-2 shadow-custom z-50 transition-all duration-300 md:bottom-auto md:left-6 md:top-1/2 md:-translate-y-1/2 md:translate-x-0 md:w-20 md:h-[400px] md:rounded-[32px] md:flex md:items-center md:justify-center">
-      <div className="flex justify-between items-center px-2 w-full md:flex-col md:justify-around md:h-full md:px-0">
+    <nav className="fixed bottom-0 left-0 w-full bg-[var(--surface)] border-t border-[var(--border)] pb-safe pt-2 px-6 z-50">
+      <div className="flex justify-between items-center max-w-lg mx-auto pb-2">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = activePage === item.id
@@ -29,14 +29,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activePage, setActivePage 
             <button
               key={item.id}
               onClick={() => setActivePage(item.id)}
-              className={`flex flex-col items-center justify-center py-2 px-4 rounded-full transition-all duration-300 md:w-14 md:h-14 md:px-0 ${
-                isActive
-                  ? 'bg-[var(--primary)] text-white shadow-md scale-105'
-                  : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-slate-50'
+              className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 w-16 ${
+                isActive ? 'text-[var(--primary)]' : 'text-[var(--muted)] hover:text-[var(--text)]'
               }`}
             >
-              <Icon size={20} className={isActive ? 'stroke-[2.5]' : 'stroke-[2]'} />
-              <span className="text-[10px] font-semibold mt-0.5 tracking-wider uppercase md:hidden">
+              <Icon size={22} className={isActive ? 'stroke-[2.5]' : 'stroke-[2]'} />
+              <span className={`text-[10px] mt-1 font-medium ${isActive ? 'font-bold' : ''}`}>
                 {item.label}
               </span>
             </button>

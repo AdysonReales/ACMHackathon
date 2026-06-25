@@ -17,6 +17,7 @@ export const useCombatController = (
 ): CombatState & CombatActions => {
   // ---------- State ----------
   const [screen, setScreen] = useState<ScreenState>(initialCustomData ? 'battle' : 'upload')
+  //const [screen, setScreen] = useState<ScreenState>('battle')
   const [levelData, setLevelData] = useState<LevelData | null>(initialCustomData || null)
   const [compileProgress, setCompileProgress] = useState(0)
   const [compileError, setCompileError] = useState<string | null>(null)
