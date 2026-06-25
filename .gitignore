@@ -1,8 +1,46 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules/
+dist/
+dist-ssr/
+
+# Environments / Secrets
+.env
+.env.local
+.env.*
+*.local
+!.env.example
+*.secret.md
+
+# Project specific
 archives/
 experiment/
 landingpage/
 instructions.md
-.env
-.env.local
-node_modules/
-dist/
+references/
+*.local.md
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Public repository context setup
+# Keep private AI/team context local.
+context/
+scripts/
+skills/
