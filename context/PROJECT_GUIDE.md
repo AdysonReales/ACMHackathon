@@ -17,7 +17,7 @@ Keep this file short. Update or remove obsolete rules instead of adding competin
 - **Project:** Proseso: Academic Showdown
 - **Users:** Filipino Students (Learners) & Speech Tech Researchers (Data Consumers)
 - **Goal:** Dual-merge hackathon submission (Theme 1 + Theme 2). A mobile-responsive, turn-based academic battle game that crowdsources and annotates Taglish speech datasets.
-- **Current stage:** Initial Architecture Setup & Core Loop Implementation
+- **Current stage:** Refactoring & Background Generation Engine Verification
 - **Primary repository/app:** ACM--LarpTrip
 - **Non-goals:** Chrome Extension background workers, real-time continuous chat LLMs, procedural map generation.
 
@@ -25,10 +25,10 @@ Keep this file short. Update or remove obsolete rules instead of adding competin
 
 - **Language(s):** TypeScript
 - **Frontend:** React (Vite) + Tailwind CSS (Mobile-first, responsive)
-- **Backend:** Serverless / Supabase Edge Functions (Single-pass JSON generation)
+- **Backend:** Google Gemini 2.5 Flash API (Cloud-based JSON & SSE streaming) + Supabase Edge Functions
 - **Database:** Supabase (PostgreSQL for metadata, Storage Buckets for `.wav` files)
 - **Infrastructure:** Vercel (Hosting)
-- **Key dependencies:** Deepgram API (Speech-to-Text with `filler_words=true` flag)
+- **Key dependencies:** Deepgram API (Speech-to-Text with `filler_words=true` flag), PDF.js (Client-side document parsing)
 
 ## Project Steps & Architecture
 

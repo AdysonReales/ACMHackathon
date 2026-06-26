@@ -49,22 +49,28 @@ Use `References` to point to owner files instead of duplicating their content.
 
 ## Decisions
 
-### YYYY-MM-DD - Initial Project Direction
+### 2026-06-26 - Integration of Google Gemini 2.5 Flash API and Split-Stage Compilation
 
 Decision:
+We upgraded the backend from local Ollama (running Phi-3) to the Google Gemini 2.5 Flash API via cloud calls, secured with a local `VITE_GEMINI_API_KEY` stored in `.env`. To address latency and truncation issues during full-document level compilation, we designed and implemented a **Split-Stage Compilation** pattern in `useCombatController.ts`:
+1. **Immediate Stage (Phase 1):** Compiles the first phase of the level instantly and feeds it to the frontend, allowing the user to start playing and interacting immediately.
+2. **Background Stage (Phases 2 & 3):** Initiates background compilation of the remaining level phases simultaneously. While compiling, a subtle progress indicator/loading system handles the background state. If a user reaches subsequent phases before the background generation completes, a dedicated loading overlay blocks input until completion.
 
 Why:
+Local Ollama generation was highly latency-heavy and frequently truncated response outputs when parsing larger documents, causing JSON parsing errors on the client. Upgrading to Google Gemini 2.5 Flash via a secure API key enables high-speed, JSON-constrained formatting (using `responseMimeType: "application/json"`). The split-stage generation design ensures zero-latency starts for players, keeping the UI highly responsive while resolving long processing times for multi-phase level files.
 
 Alternatives considered:
+- Running smaller local models: Rejected due to poor parsing of complex syllabus/lecture notes.
+- Synchronously generating all phases: Rejected because waiting 10-15 seconds for a full 3-phase level to compile degrades the user experience.
 
 Consequences:
-- Positive:
-- Negative:
-- Risks:
+- Positive: Instant UI transitions, robust JSON validation, and fluid player interaction.
+- Negative: Requires an active Internet connection and a Gemini API key.
+- Risks: If the API key is missing or calls fail, a fallback/self-healing state is triggered to degrade gracefully.
 
 Supersedes: N/A
 
 Status: active
 
-References:
+References: [useCombatController.ts](file:///c:/Users/Lleyton%20Flores/Desktop/Work/Hackathons/FEU-ACM-TechSprint/ACMHackathon/src/controllers/useCombatController.ts), [CombatScreen.tsx](file:///c:/Users/Lleyton%20Flores/Desktop/Work/Hackathons/FEU-ACM-TechSprint/ACMHackathon/src/pages/CombatScreen.tsx), [types.ts](file:///c:/Users/Lleyton%20Flores/Desktop/Work/Hackathons/FEU-ACM-TechSprint/ACMHackathon/src/models/types.ts)
 

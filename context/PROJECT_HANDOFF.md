@@ -31,28 +31,33 @@ Working:
 - Architecture choice finalized: Mobile-responsive turn-based Web App (React + Vite + TypeScript).
 - UI design tokens, 80-10-5-5 layout scaling principles, and game rules locked down in `context/UI.md`.
 - Art assets pipeline configured to point exclusively to the absolute directory path `/assets/sprites/`.
+- Integration of Google Gemini 2.5 Flash API as backend LLM for level compilation and answer grading.
+- Split-stage background compilation (Phase 1 immediate compile, Phases 2 & 3 compiled in background with self-healing states) implemented in [useCombatController.ts](file:///c:/Users/Lleyton%20Flores/Desktop/Work/Hackathons/FEU-ACM-TechSprint/ACMHackathon/src/controllers/useCombatController.ts).
+- PDF.js Worker initialization resolved using Vite's native URL constructor.
+- UI changes merged on `UIChange` branch with teammate's Pokemon-style side-by-side sprite battle screen design.
+- Local TypeScript builds pass successfully (`npx tsc --noEmit` returns 0 errors).
 
 In progress:
-- Creating the core directory skeleton and setting up local system files.
+- Manual testing of the document upload and gameplay loop on the local dev server.
 
 Blocked:
-- Generation of live API access configurations (Supabase endpoints and Deepgram credentials) to insert inside the upcoming secure `.env.local` file.
+- None. (Supabase integrations and Deepgram speech credentials will be set up in subsequent stages).
 
 ## Last Meaningful Changes
-- Abandoned the Google Chrome Extension concept to pursue a high-performance web dashboard layout to better scale on touchscreens and accommodate low-bandwidth constraints.
+- Refactored `useCombatController.ts`, `types.ts`, and `CombatScreen.tsx` to shift backend from local Ollama (Phi-3) to Google Gemini 2.5 Flash API.
+- Implemented background thread generation for secondary/tertiary levels to solve local model latency.
+- Upgraded layout in `CombatScreen.tsx` to support teammate's updated Pokemon-style battle arena screen design.
 
 ## Risks or Stale Facts
-- Native browser constraints require active secure contexts (`https://` or `localhost`) for microphone recording arrays to capture speech streams successfully on targeted mobile platforms.
+- The Gemini API Key is stored in `.env` as `VITE_GEMINI_API_KEY`, which is locally ignored. Teammates need this key defined in their local `.env` files.
 
 ## Verification Gaps
-
-- Integration with real-time continuous streaming arrays via Deepgram has only been structured theoretically; data payload feedback under variable network connectivity hasn't been simulated.
+- Speech input validation and Deepgram audio export functions are implemented theoretically; full end-to-end sandbox testing of stutter detection awaits integration.
 
 ## Next Focus
-
-1. Initialize the Vite React workspace engine and integrate Tailwind CSS configs.
-2. Deliver the initial base pixel-art character sheets and template elements into `/assets/sprites/`.
-3. Scaffold the main turn state machine interface component (`CombatScreen.tsx`) executing the double-bezel containment structure.
+1. User to manually verify upload and combat loop logic on `http://localhost:5173/`.
+2. Stage and commit the modified controller, model, and view files.
+3. Integrate real-time speech validation via Deepgram.
 
 ## Closeout Checklist
 
