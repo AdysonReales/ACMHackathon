@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Play, CheckCircle2, Lock, Star } from 'lucide-react'
+import { Play, CheckCircle2, Lock } from 'lucide-react'
 
 interface LevelNode {
   id: number
@@ -35,7 +35,7 @@ export const ScheduleScreen: React.FC = () => {
           {/* Pathway Line */}
           <div className="absolute top-10 bottom-10 left-1/2 -translate-x-1/2 w-3 bg-[#cbd5e1] border-2 border-[#757682] z-0"></div>
 
-          {levels.map((lvl, index) => {
+          {levels.map((lvl) => {
             const isCompleted = lvl.status === 'completed'
             const isActive = lvl.status === 'active'
 

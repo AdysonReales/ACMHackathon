@@ -49,22 +49,29 @@ Use `References` to point to owner files instead of duplicating their content.
 
 ## Decisions
 
-### YYYY-MM-DD - Initial Project Direction
+### 2026-06-26 - Dual AI Provider and Controller-per-Feature Architecture
 
 Decision:
+We migrated the AI compilation and grading systems from Ollama-only to a dual-mode provider setup (supporting Gemini 2.5 Flash and local Ollama) based on environment configuration. We also introduced a controller-per-feature modular architecture with new hooks: useDocumentController (RAG chunking & vector retrieval), useGradingController (RAG-backed defense grading), useEvidenceController, useProfileController, and useScheduleController.
 
 Why:
+To support team members using different local setups (some with Ollama, some with Gemini API keys), while incorporating Gemini 2.5 RAG capabilities for contextual source-based grading. The modular controller structure isolates business logic cleanly from UI views, preventing code clutter in useCombatController.
 
 Alternatives considered:
+- Ollama-only: Discarded to support Gemini 2.5.
+- Unified single-controller: Discarded because combat, schedule, profile, evidence, and RAG represent distinct domains.
 
 Consequences:
-- Positive:
-- Negative:
-- Risks:
+- Positive: Developers can easily toggle backends via VITE_AI_PROVIDER. RAG improves grading precision.
+- Negative: Additional configuration needed (.env file).
+- Risks: Gemini API key usage billing; Ollama doesn't support vector embeddings natively (falls back to keyword-based RAG retrieval).
 
 Supersedes: N/A
 
 Status: active
 
 References:
+- `src/lib/aiProvider.ts`
+- `src/controllers/useDocumentController.ts`
+- `src/controllers/useGradingController.ts`
 

@@ -23,8 +23,16 @@ export interface LevelData {
   level_id: number
   professor_name: string
   professor_sprite: string
+  subject?: string
   combat_phases: CombatPhase[]
   evidence_deck: EvidenceCard[]
+}
+
+// ---------- RAG Pipeline ----------
+export interface DocumentChunk {
+  text: string
+  index: number
+  embedding?: number[]
 }
 
 export type ScreenState = 'upload' | 'compiling' | 'battle' | 'victory' | 'defeat'

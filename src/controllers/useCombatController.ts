@@ -1,26 +1,26 @@
 // ============================================================
 // CONTROLLER — Combat gameplay state + all business logic
 // ============================================================
+// Refactored: delegates AI calls to useDocumentController (RAG) and
+// useGradingController. Supports both Gemini 2.5 and Ollama backends.
+// Exposes the EXACT SAME interface (CombatState & CombatActions) so
+// CombatScreen.tsx needs zero changes.
 
 import { useState, useEffect } from 'react'
-import * as pdfjsLib from 'pdfjs-dist'
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import { useDocumentController } from './useDocumentController'
+import { useGradingController } from './useGradingController'
 import type { LevelData, ScreenState, TurnFeedback, CombatState, CombatActions } from '../models/types'
-
-// Configure PDF.js worker (local, no CDN)
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
-
-const FILLER_KEYWORDS = ['ano', 'like', 'you know', 'uh', 'um', 'actually', 'kasi', 'parang']
 
 export const useCombatController = (
   initialCustomData?: LevelData | null
 ): CombatState & CombatActions => {
+  // ---------- Sub-controllers ----------
+  const doc = useDocumentController()
+  const { gradeDefense } = useGradingController(doc.retrieveChunks)
+
   // ---------- State ----------
-  //const [screen, setScreen] = useState<ScreenState>(initialCustomData ? 'battle' : 'upload')
-  const [screen, setScreen] = useState<ScreenState>('battle')
+  const [screen, setScreen] = useState<ScreenState>(initialCustomData ? 'battle' : 'upload')
   const [levelData, setLevelData] = useState<LevelData | null>(initialCustomData || null)
-  const [compileProgress, setCompileProgress] = useState(0)
-  const [compileError, setCompileError] = useState<string | null>(null)
 
   const [playerHp, setPlayerHp] = useState(100)
   const [opponentHp, setOpponentHp] = useState(100)
@@ -59,94 +59,6 @@ export const useCombatController = (
     setScreen('battle')
   }
 
-  const extractTextFromPdf = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer()
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-    const pages: string[] = []
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i)
-      const content = await page.getTextContent()
-      const strings = content.items
-        .filter((item: any) => 'str' in item)
-        .map((item: any) => item.str)
-      pages.push(strings.join(' '))
-    }
-
-    return pages.join('\n\n')
-  }
-
-  const compileLevelFromText = async (text: string, _fileName: string) => {
-    setCompileProgress(25)
-
-    const systemPrompt = `You are a curriculum compiler for the game "Proseso: Academic Showdown".
-Analyze the user text and create exactly 2 to 3 turn-based combat phases based on the ACTUAL CONTENT of the document.
-Each phase contains a flawed academic argument derived from the document's topics, the correct evidence id, and a follow-up prompt.
-You MUST output ONLY a valid JSON object. No other prose, no markdown.
-
-JSON structure:
-{
-  "level_id": 105,
-  "professor_name": "Dr. Arboleda",
-  "professor_sprite": "prof_strict_01",
-  "combat_phases": [
-    {
-      "phase_id": 1,
-      "flawed_argument": "A flawed statement BASED ON the document content that the student must refute.",
-      "contradictory_evidence_id": "ev_unique_id",
-      "follow_up_prompt": "A follow up question in Taglish asking the student to explain the correct concept."
-    }
-  ],
-  "evidence_deck": [
-    {
-      "id": "ev_unique_id",
-      "title": "Title of the evidence card",
-      "description_bilingual": "Correct explanation starting with 'Mali! (Objection!) ...' in bilingual Taglish."
-    }
-  ]
-}`
-
-    try {
-      setCompileProgress(40)
-      const response = await fetch('/api-ollama/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'phi3',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Compile this academic text into a showdown level:\n\n${text.substring(0, 6000)}` }
-          ],
-          format: 'json',
-          stream: false
-        })
-      })
-
-      setCompileProgress(70)
-      if (!response.ok) {
-        throw new Error(`Ollama server error (status ${response.status}). Is Ollama running?`)
-      }
-
-      const data = await response.json()
-      const rawJson = data.message?.content
-      if (!rawJson) throw new Error('Empty response from Ollama.')
-
-      setCompileProgress(90)
-      const parsed: LevelData = JSON.parse(rawJson.trim())
-
-      if (!parsed.combat_phases?.length || !parsed.evidence_deck?.length) {
-        throw new Error('AI returned incomplete level data. Try again.')
-      }
-
-      setCompileProgress(100)
-      startBattle(parsed)
-    } catch (err: any) {
-      console.error(err)
-      setCompileError(err.message)
-      setScreen('upload')
-    }
-  }
-
   // ---------- Public actions ----------
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,26 +66,19 @@ JSON structure:
     if (!file) return
 
     setScreen('compiling')
-    setCompileProgress(10)
-    setCompileError(null)
+    doc.setError(null)
 
     try {
-      let text = ''
+      // 1. Process document (extract + chunk + embed)
+      const { text } = await doc.processDocument(file)
 
-      if (file.name.toLowerCase().endsWith('.pdf')) {
-        setCompileProgress(15)
-        text = await extractTextFromPdf(file)
-        if (!text.trim()) {
-          throw new Error('PDF has no extractable text (might be scanned images). Use a text-based PDF.')
-        }
-      } else {
-        text = await file.text()
-      }
+      // 2. Compile level from document text via AI (Gemini or Ollama)
+      const parsed = await doc.compileLevelFromText(text)
 
-      await compileLevelFromText(text, file.name)
+      // 3. Start the battle
+      startBattle(parsed)
     } catch (err: any) {
       console.error(err)
-      setCompileError(err.message)
       setScreen('upload')
     }
   }
@@ -189,76 +94,22 @@ JSON structure:
     setIsGrading(true)
     setTurnFeedback(null)
 
-    const words = defenseInput.toLowerCase().split(/\s+/)
-    const foundFillers = words.filter(w => FILLER_KEYWORDS.includes(w))
-    const stutterPenalty = foundFillers.length * 4
-
-    const correctInfo = currentEvidence?.description_bilingual || ''
-
-    const gradingPrompt = `You are the strict academic prosecutor ${levelData.professor_name} in "Proseso: Academic Showdown".
-The flawed argument: "${currentPhase.flawed_argument}"
-The correct rebuttal info: "${correctInfo}"
-The student's defense: "${defenseInput}"
-
-Grade the student's explanation 0-100.
-Below 50 if nonsense/vague/wrong. 70-100 if they address the core error correctly (even in Taglish).
-Output ONLY JSON:
-{
-  "grade": 85,
-  "feedback": "Courtroom response in bilingual Taglish."
-}`
-
-    let finalGrade = 0
-    let aiFeedback = ''
-
-    try {
-      const response = await fetch('/api-ollama/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'phi3',
-          messages: [
-            { role: 'system', content: gradingPrompt },
-            { role: 'user', content: `Grade: "${defenseInput}"` }
-          ],
-          format: 'json',
-          stream: false
-        })
-      })
-
-      if (!response.ok) throw new Error('Grading failed')
-
-      const data = await response.json()
-      const parsed = JSON.parse(data.message?.content.trim())
-      finalGrade = parsed.grade ?? 50
-      aiFeedback = parsed.feedback ?? 'No feedback.'
-    } catch {
-      // Fallback keyword matching
-      const hasKeywords = words.some(w =>
-        ['normal', 'logic', 'sql', 'index', 'secure', 'query', 'parameterized',
-         'sanitize', 'prepared', 'database', 'inject', 'validate', 'error'].includes(w)
-      )
-      finalGrade = hasKeywords ? 75 : 40
-      aiFeedback = hasKeywords
-        ? "Medyo tama ang reasoning mo, pero kulang pa."
-        : "Walang kinalaman ang sagot mo sa issue. Objection!"
-    }
-
-    const damage = Math.max(0, finalGrade - stutterPenalty)
+    // --- Delegate grading to useGradingController (RAG-powered) ---
+    const result = await gradeDefense(defenseInput, currentPhase, currentEvidence, levelData)
 
     // Screen shake
     setScreenShake(true)
     setTimeout(() => setScreenShake(false), 500)
 
-    if (finalGrade >= 60) {
+    if (result.feedback.type === 'success') {
       // --- SUCCESS ---
-      const nextOppHp = Math.max(0, opponentHp - damage)
+      const nextOppHp = Math.max(0, opponentHp - result.damage)
       setOpponentHp(nextOppHp)
-      setTurnFeedback({ type: 'success', grade: damage, message: aiFeedback })
+      setTurnFeedback(result.feedback)
 
       setCombatLog(prev => [
-        `✅ Grade: ${finalGrade}% | Damage: ${damage} | ${aiFeedback}`,
-        ...prev
+        `✅ Grade: ${result.rawGrade}% | Damage: ${result.damage} | ${result.feedback.message}`,
+        ...prev,
       ])
 
       setWaitingNextTurn(true)
@@ -276,14 +127,14 @@ Output ONLY JSON:
           setCurrentPhaseIndex(nextIdx)
           setCombatLog(prev => [
             `📋 Phase ${nextIdx + 1}: New accusation incoming...`,
-            ...prev
+            ...prev,
           ])
         } else {
-          // All phases done, opponent still alive — loop back
+          // All phases done, opponent still alive — loop
           setCurrentPhaseIndex(0)
           setCombatLog(prev => [
             `🔄 Prosecutor circles back with more arguments...`,
-            ...prev
+            ...prev,
           ])
         }
         setDefenseInput('')
@@ -296,11 +147,11 @@ Output ONLY JSON:
       const playerDmg = 30
       const nextPlayerHp = Math.max(0, playerHp - playerDmg)
       setPlayerHp(nextPlayerHp)
-      setTurnFeedback({ type: 'fail', grade: finalGrade, message: aiFeedback })
+      setTurnFeedback(result.feedback)
 
       setCombatLog(prev => [
-        `❌ Grade: ${finalGrade}% | You took ${playerDmg} damage | ${aiFeedback}`,
-        ...prev
+        `❌ Grade: ${result.rawGrade}% | You took ${playerDmg} damage | ${result.feedback.message}`,
+        ...prev,
       ])
 
       setWaitingNextTurn(true)
@@ -317,14 +168,14 @@ Output ONLY JSON:
     }
   }
 
-  // Mic mock
+  // Mic mock (same as original)
   const handleMicTap = () => {
     if (isRecording) {
       setIsRecording(false)
       const phrases = [
         'Kasi ano, database normalization prevents duplicates parang relational structure.',
         'Prepared statements dynamically sanitize input text parameters.',
-        'Mali po ang premise. Propositions are logically parsed using truth tables.'
+        'Mali po ang premise. Propositions are logically parsed using truth tables.',
       ]
       setDefenseInput(phrases[Math.floor(Math.random() * phrases.length)])
     } else {
@@ -336,8 +187,6 @@ Output ONLY JSON:
   const resetAll = () => {
     setScreen('upload')
     setLevelData(null)
-    setCompileError(null)
-    setCompileProgress(0)
     setPlayerHp(100)
     setOpponentHp(100)
     setCurrentPhaseIndex(0)
@@ -345,9 +194,12 @@ Output ONLY JSON:
     setCombatLog([])
     setTurnFeedback(null)
     setWaitingNextTurn(false)
+    doc.setError(null)
+    doc.setProgress(0)
   }
 
   // ---------- Derived state ----------
+  const FILLER_KEYWORDS = ['ano', 'like', 'you know', 'uh', 'um', 'actually', 'kasi', 'parang']
   const words = defenseInput.toLowerCase().split(/\s+/)
   const fillerWarning = !!(defenseInput.trim() && words.some(w => FILLER_KEYWORDS.includes(w)))
 
@@ -359,8 +211,8 @@ Output ONLY JSON:
     // State
     screen,
     levelData,
-    compileProgress,
-    compileError,
+    compileProgress: doc.progress,
+    compileError: doc.error,
     playerHp,
     opponentHp,
     currentPhaseIndex,
