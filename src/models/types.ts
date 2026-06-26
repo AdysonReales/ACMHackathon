@@ -70,6 +70,10 @@ export interface CombatState {
   phaseNumber: number
   totalPhases: number
   currentPhase: CombatPhase | undefined
+  selectedProf: string
+  hint: string | null
+  isGeneratingHint: boolean
+  styledPrompt: string
 }
 
 export interface CombatActions {
@@ -78,4 +82,6 @@ export interface CombatActions {
   handleMicTap: () => void
   resetAll: () => void
   setDefenseInput: (value: string) => void
+  setSelectedProf: (profId: string) => void
+  handleAskForHint: () => Promise<void>
 }

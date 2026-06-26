@@ -2,7 +2,7 @@
 // VIEW — CombatScreen (Retro Pixel Court Aesthetic with Battle Arena)
 // ============================================================
 
-import React, { useRef, useState } from 'react'
+import React, { useRef } from 'react'
 import { Upload, Send, Loader2, RefreshCw, BookOpen, Lightbulb, Mic, AlertTriangle } from 'lucide-react'
 import { useCombatController } from '../controllers/useCombatController'
 import type { LevelData } from '../models/types'
@@ -40,8 +40,9 @@ export const CombatScreen: React.FC<CombatScreenProps> = ({ customLevelData }) =
   const c = useCombatController(customLevelData) as any
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Local state for Professor Selection UX
-  const [selectedProf, setSelectedProf] = useState<string>('reyes')
+  // State bound to controller
+  const selectedProf = c.selectedProf
+  const setSelectedProf = c.setSelectedProf
 
   const professors: ProfessorConfig[] = [
     {
@@ -310,7 +311,7 @@ export const CombatScreen: React.FC<CombatScreenProps> = ({ customLevelData }) =
           {c.opponentName || activeProf.name} Cross-Examines:
         </span>
         <h2 className="text-base sm:text-lg font-bold text-[#191c1e] leading-relaxed font-['Space_Grotesk']">
-          {c.currentPhase?.flawed_argument || "Primary keys prevent SQL injection attacks. True or False? Explain your reasoning."}
+          {c.styledPrompt || "Primary keys prevent SQL injection attacks. True or False? Explain your reasoning."}
         </h2>
       </div>
 
@@ -350,11 +351,18 @@ export const CombatScreen: React.FC<CombatScreenProps> = ({ customLevelData }) =
         {/* Action Button Dock */}
         <div className="flex gap-3">
           <button
-            onClick={() => {/* Trigger Hint Logic */}}
-            className="px-4 py-3 bg-[#e6e8ea] border-2 border-[#757682] text-[#191c1e] font-bold rounded-lg hover:bg-[#cbd5e1] transition-all flex items-center justify-center gap-2 active:translate-y-[2px]"
+            onClick={c.handleAskForHint}
+            disabled={c.isGeneratingHint || c.isGrading || c.waitingNextTurn || c.opponentHp <= 0 || c.playerHp <= 0}
+            className="px-4 py-3 bg-[#e6e8ea] border-2 border-[#757682] text-[#191c1e] font-bold rounded-lg hover:bg-[#cbd5e1] transition-all flex items-center justify-center gap-2 active:translate-y-[2px] disabled:opacity-50"
           >
-            <Lightbulb size={18} className="text-amber-600 animate-pulse" />
-            <span className="hidden sm:inline font-['Space_Grotesk'] text-sm">Ask for Hint</span>
+            {c.isGeneratingHint ? (
+              <Loader2 className="animate-spin text-[#00236f]" size={18} />
+            ) : (
+              <Lightbulb size={18} className="text-amber-600 animate-pulse" />
+            )}
+            <span className="hidden sm:inline font-['Space_Grotesk'] text-sm">
+              {c.isGeneratingHint ? 'Thinking...' : 'Ask for Hint'}
+            </span>
           </button>
           
           <button

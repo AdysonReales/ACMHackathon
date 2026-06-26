@@ -75,3 +75,25 @@ References:
 - `src/controllers/useDocumentController.ts`
 - `src/controllers/useGradingController.ts`
 
+### 2026-06-26 - Dynamic Styled Prompts and RAG Hints
+
+Decision:
+We added a dedicated `useHintController` that dynamically re-styles the raw compiled flawed argument into an open-ended cross-examination prompt based on the chosen professor's ID (e.g. Reyes is strict and mean, Santos is gentle and uses jeepney/cabinet analogies). The controller also generates dynamic, styled hints using RAG source text lookup via Gemini 2.5 / Ollama.
+
+Why:
+To satisfy user needs for highly personalized learning experiences where professor feedback and guidance matches their visual details (mean vs kind) and provides smart clues instead of giving answers away directly.
+
+Alternatives considered:
+- Plain static hints: Discarded as they would not be contextually aware of uploaded custom PDFs.
+
+Consequences:
+- Positive: Richer, more engaging study companion experience.
+- Negative: Additional prompt token overhead.
+- Risks: API billing.
+
+Status: active
+
+References:
+- `src/controllers/useHintController.ts`
+- `src/controllers/useCombatController.ts`
+

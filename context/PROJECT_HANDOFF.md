@@ -24,7 +24,8 @@ Before updating this file, check whether the new fact belongs in another owner. 
 Working:
 - **Dual AI Provider**: Clean abstraction implemented in `src/lib/aiProvider.ts` to seamlessly toggle between Gemini 2.5 Flash and local Ollama via environment config.
 - **RAG-Backed Grading**: PDF document chunking, embedding, and cosine similarity lookup implemented. When presenting defenses, relevant context blocks are retrieved and passed to the LLM to guide grading accuracy.
-- **Controller-per-Feature Architecture**: Added independent hooks `useDocumentController`, `useGradingController`, `useEvidenceController`, `useProfileController`, and `useScheduleController` to isolate core logic without touching UI `.tsx` screens.
+- **Dynamic Hints & styled Prompts**: Implemented `useHintController.ts` which generates styled open-ended questions based on the active professor's personality (Reyes is mean/demanding, Santos is kind, etc.) and calls the AI provider to generate RAG-supported hints that append directly to the courtroom log.
+- **Controller-per-Feature Architecture**: Added independent hooks `useDocumentController`, `useGradingController`, `useEvidenceController`, `useProfileController`, `useScheduleController`, and `useHintController` to isolate core logic without touching UI `.tsx` screens.
 - **Build Cleanliness**: App compiles and builds successfully via `npm run build` (tsc and Vite bundle generation complete with zero errors).
 
 In progress:
@@ -36,6 +37,7 @@ Blocked:
 ## Last Meaningful Changes
 - Switched default LLM generation and grading pipeline from local Ollama to Gemini 2.5 Flash, while maintaining full fallback compatibility for local Ollama deployments via a simple `.env` switch.
 - Fixed TypeScript compile warnings/unused variables on page views.
+- Wired up the hint button to `handleAskForHint` and changed the cross-examination heading to bind to the professor-styled dynamic prompt.
 
 ## Risks or Stale Facts
 - If running Ollama, embeddings are not generated natively, so the RAG pipeline automatically falls back to keyword similarity ranking (tested and operational).

@@ -1,14 +1,14 @@
 // ============================================================
 // CONTROLLER — Combat gameplay state + all business logic
 // ============================================================
-// Refactored: delegates AI calls to useDocumentController (RAG) and
-// useGradingController. Supports both Gemini 2.5 and Ollama backends.
-// Exposes the EXACT SAME interface (CombatState & CombatActions) so
-// CombatScreen.tsx needs zero changes.
+// Refactored: delegates AI calls to useDocumentController (RAG),
+// useGradingController, and useHintController.
+// Supports both Gemini 2.5 and Ollama backends.
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useDocumentController } from './useDocumentController'
 import { useGradingController } from './useGradingController'
+import { useHintController } from './useHintController'
 import type { LevelData, ScreenState, TurnFeedback, CombatState, CombatActions } from '../models/types'
 
 export const useCombatController = (
@@ -17,10 +17,12 @@ export const useCombatController = (
   // ---------- Sub-controllers ----------
   const doc = useDocumentController()
   const { gradeDefense } = useGradingController(doc.retrieveChunks)
+  const hintCtrl = useHintController()
 
   // ---------- State ----------
   const [screen, setScreen] = useState<ScreenState>(initialCustomData ? 'battle' : 'upload')
   const [levelData, setLevelData] = useState<LevelData | null>(initialCustomData || null)
+  const [selectedProf, setSelectedProf] = useState<string>('reyes')
 
   const [playerHp, setPlayerHp] = useState(100)
   const [opponentHp, setOpponentHp] = useState(100)
@@ -53,6 +55,7 @@ export const useCombatController = (
     setTurnFeedback(null)
     setScreenShake(false)
     setWaitingNextTurn(false)
+    hintCtrl.clearHint()
     setCombatLog([
       `⚖️ Court is in session! ${data.professor_name} challenges your understanding.`,
     ])
@@ -72,8 +75,8 @@ export const useCombatController = (
       // 1. Process document (extract + chunk + embed)
       const { text } = await doc.processDocument(file)
 
-      // 2. Compile level from document text via AI (Gemini or Ollama)
-      const parsed = await doc.compileLevelFromText(text)
+      // 2. Compile level from document text via AI (Gemini or Ollama) passing selected personality style
+      const parsed = await doc.compileLevelFromText(text, selectedProf)
 
       // 3. Start the battle
       startBattle(parsed)
@@ -87,6 +90,11 @@ export const useCombatController = (
   const currentEvidence = levelData?.evidence_deck?.find(
     ev => ev.id === currentPhase?.contradictory_evidence_id
   )
+
+  // Derived styled open-ended prompt matching active professor
+  const styledPrompt = useMemo(() => {
+    return hintCtrl.getStyledPrompt(selectedProf, currentPhase)
+  }, [selectedProf, currentPhase, hintCtrl])
 
   const handleSubmitDefense = async () => {
     if (!defenseInput.trim() || isGrading || !currentPhase || !levelData || waitingNextTurn) return
@@ -114,6 +122,7 @@ export const useCombatController = (
 
       setWaitingNextTurn(true)
       setIsGrading(false)
+      hintCtrl.clearHint() // clear hint for next turn
 
       setTimeout(() => {
         if (nextOppHp <= 0) {
@@ -184,6 +193,27 @@ export const useCombatController = (
     }
   }
 
+  const handleAskForHint = async () => {
+    if (isGrading || waitingNextTurn || !currentPhase) return
+
+    // Retrieve relevant doc chunks to build accurate hint guidance
+    const chunks = await doc.retrieveChunks(`${currentPhase.flawed_argument}`, 2)
+
+    // Call hint controller to generate persona-styled hint
+    const hintText = await hintCtrl.generateHint(
+      selectedProf,
+      currentPhase,
+      currentEvidence,
+      chunks
+    )
+
+    // Append hint event to combat transcript log
+    setCombatLog(prev => [
+      `💡 Hint requested from ${opponentName}: "${hintText}"`,
+      ...prev,
+    ])
+  }
+
   const resetAll = () => {
     setScreen('upload')
     setLevelData(null)
@@ -196,6 +226,7 @@ export const useCombatController = (
     setWaitingNextTurn(false)
     doc.setError(null)
     doc.setProgress(0)
+    hintCtrl.clearHint()
   }
 
   // ---------- Derived state ----------
@@ -228,11 +259,17 @@ export const useCombatController = (
     phaseNumber,
     totalPhases,
     currentPhase,
+    selectedProf,
+    hint: hintCtrl.hint,
+    isGeneratingHint: hintCtrl.isGeneratingHint,
+    styledPrompt,
     // Actions
     handleFileUpload,
     handleSubmitDefense,
     handleMicTap,
     resetAll,
     setDefenseInput,
+    setSelectedProf,
+    handleAskForHint,
   }
 }
