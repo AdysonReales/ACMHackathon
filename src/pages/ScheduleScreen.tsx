@@ -1,23 +1,10 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Play, CheckCircle2, Lock } from 'lucide-react'
 
-interface LevelNode {
-  id: number
-  title: string
-  subject: string
-  status: 'completed' | 'active' | 'locked'
-  difficulty: 'Basic' | 'Medium' | 'Hard'
-  stars: number
-}
+import { useScheduleController } from '../controllers/useScheduleController'
 
 export const ScheduleScreen: React.FC = () => {
-  const [levels] = useState<LevelNode[]>([
-    { id: 1, title: 'Propositional Logic', subject: 'Discrete Math', status: 'completed', difficulty: 'Basic', stars: 3 },
-    { id: 2, title: 'Truth Tables & Proofs', subject: 'Discrete Math', status: 'active', difficulty: 'Basic', stars: 0 },
-    { id: 3, title: 'Sets & Venn Diagrams', subject: 'Discrete Math', status: 'locked', difficulty: 'Medium', stars: 0 },
-    { id: 4, title: 'Functions & Relations', subject: 'Discrete Math', status: 'locked', difficulty: 'Medium', stars: 0 },
-    { id: 5, title: 'Graph Theory Intro', subject: 'Discrete Math', status: 'locked', difficulty: 'Hard', stars: 0 },
-  ])
+  const { levels } = useScheduleController()
 
   return (
     <div className="w-full max-w-lg mx-auto pt-8 px-4 flex flex-col gap-6 pb-12 font-['Space_Grotesk']">

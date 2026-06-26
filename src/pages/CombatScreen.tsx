@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useRef } from 'react'
-import { Upload, Send, Loader2, RefreshCw, BookOpen, Lightbulb, Mic, AlertTriangle } from 'lucide-react'
+import { Upload, Send, Loader2, RefreshCw, BookOpen, Lightbulb, Mic } from 'lucide-react'
 import { useCombatController } from '../controllers/useCombatController'
 import type { LevelData } from '../models/types'
 
@@ -172,7 +172,82 @@ export const CombatScreen: React.FC<CombatScreenProps> = ({ customLevelData }) =
   // ============================================================
   // PHASE 3: EVALUATION DEBRIEF (Victory/Defeat)
   // ============================================================
-  if (c.screen === 'victory' || c.screen === 'defeat') {
+  if (c.screen === 'defeat') {
+    return (
+      <div className="w-full max-w-lg mx-auto pt-12 px-4 flex flex-col gap-6 pb-24 font-['Space_Grotesk']">
+        <div className="bg-red-600 border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center text-white my-4">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase animate-pulse">
+            GISADO KA!
+          </h1>
+          <p className="text-sm font-bold uppercase tracking-wider mt-4 text-red-100">
+            You failed to defend your thesis.
+          </p>
+        </div>
+
+        <div className="bg-white border-2 border-black p-5 flex flex-col gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
+            <span className="font-bold text-xs uppercase text-gray-500">Case Evaluation Result</span>
+          </div>
+          <p className="text-sm text-gray-700 leading-relaxed font-bold">
+            The panel was not convinced by your defense. The professor grilled your arguments until they crumbled.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => c.changeOpponent(c.selectedProf)}
+            className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold text-base border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+          >
+            RETRY CHALLENGE
+          </button>
+          <button
+            onClick={c.resetAll}
+            className="w-full py-3 bg-white hover:bg-gray-100 text-[#191c1e] font-bold text-sm border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] transition-all active:translate-y-0.5"
+          >
+            Change Topic / Upload New File
+          </button>
+        </div>
+
+        {/* Challenge Another Professor */}
+        <div className="border-t border-gray-300 pt-5">
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+            Or Challenge Another Professor:
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            {professors.map(p => {
+              const isCurrent = c.selectedProf === p.id
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => c.changeOpponent(p.id)}
+                  className={`flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all ${
+                    isCurrent
+                      ? 'bg-red-100 border-red-400 shadow-[2px_2px_0px_0px_rgba(220,38,38,0.4)] pointer-events-none'
+                      : 'bg-white border-[#757682] hover:border-[#00236f] shadow-[2px_2px_0px_0px_rgba(0,0,0,0.15)] active:translate-y-0.5'
+                  }`}
+                >
+                  <div className="w-10 h-10 border border-[#00236f] rounded overflow-hidden bg-[#e6e8ea] shrink-0">
+                    <img src={p.image} alt={p.name} style={{ imageRendering: 'pixelated' }} className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs text-[#191c1e]">{p.name}</h4>
+                    <span className="text-[9px] uppercase tracking-widest text-[#545560]">{p.diff}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (c.screen === 'victory') {
+    const logicScore = c.evaluation?.logic ?? 0
+    const clarityScore = c.evaluation?.clarity ?? 0
+    const poiseScore = c.evaluation?.poise ?? 0
+    const benchNotes = c.evaluation?.notes ?? 'Evaluating your defense...'
+
     return (
       <div className="w-full max-w-lg mx-auto pt-8 px-4 flex flex-col gap-6 pb-24">
         <h1 className="font-['Space_Grotesk'] text-2xl font-bold text-[#00236f] mb-1">Defense Evaluation</h1>
@@ -180,15 +255,15 @@ export const CombatScreen: React.FC<CombatScreenProps> = ({ customLevelData }) =
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-[#f2f4f6] border-2 border-[#00236f] p-4 rounded-lg flex flex-col items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,35,111,1)]">
             <span className="text-[10px] uppercase font-bold text-[#545560] mb-1 tracking-wider text-center">Logic</span>
-            <span className="text-2xl font-mono font-bold text-[#00236f]">92%</span>
+            <span className="text-2xl font-mono font-bold text-[#00236f]">{logicScore}%</span>
           </div>
           <div className="bg-[#f2f4f6] border-2 border-[#00236f] p-4 rounded-lg flex flex-col items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,35,111,1)]">
             <span className="text-[10px] uppercase font-bold text-[#545560] mb-1 tracking-wider text-center">Clarity</span>
-            <span className="text-2xl font-mono font-bold text-sky-700">88%</span>
+            <span className="text-2xl font-mono font-bold text-sky-700">{clarityScore}%</span>
           </div>
           <div className="bg-[#f2f4f6] border-2 border-[#00236f] p-4 rounded-lg flex flex-col items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,35,111,1)]">
             <span className="text-[10px] uppercase font-bold text-[#545560] mb-1 tracking-wider text-center">Poise</span>
-            <span className="text-2xl font-mono font-bold text-amber-600">80%</span>
+            <span className="text-2xl font-mono font-bold text-amber-600">{poiseScore}%</span>
           </div>
         </div>
 
@@ -200,16 +275,55 @@ export const CombatScreen: React.FC<CombatScreenProps> = ({ customLevelData }) =
             </span>
           </div>
           <p className="text-sm text-[#191c1e] leading-relaxed font-medium italic">
-            "Your understanding of normalization is solid, but you struggled to explain the concept of partial dependencies. Review 2NF again before moving on."
+            "{benchNotes}"
           </p>
         </div>
 
-        <button
-          onClick={c.resetAll}
-          className="w-full py-4 bg-[#00236f] hover:bg-[#1a3a8a] text-white font-['Space_Grotesk'] font-bold text-base rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(25,28,30,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_rgba(25,28,30,1)]"
-        >
-          Next Challenge
-        </button>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => c.changeOpponent(c.selectedProf)}
+            className="w-full py-4 bg-[#00236f] hover:bg-[#1a3a8a] text-white font-['Space_Grotesk'] font-bold text-base rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(25,28,30,1)] transition-all active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_rgba(25,28,30,1)]"
+          >
+            Replay Defense
+          </button>
+          <button
+            onClick={c.resetAll}
+            className="w-full py-3 bg-white hover:bg-gray-100 text-[#191c1e] font-['Space_Grotesk'] font-bold text-sm rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(25,28,30,0.2)] transition-all active:translate-y-0.5"
+          >
+            Change Topic / Upload New File
+          </button>
+        </div>
+
+        {/* Challenge Another Professor */}
+        <div className="border-t border-[#cbd5e1] pt-5">
+          <h3 className="font-['Space_Grotesk'] text-xs font-bold text-[#545560] uppercase tracking-wider mb-3">
+            Or Challenge Another Professor on this Topic:
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            {professors.map(p => {
+              const isCurrent = c.selectedProf === p.id
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => c.changeOpponent(p.id)}
+                  className={`flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all ${
+                    isCurrent
+                      ? 'bg-[#b6c4ff] border-[#00236f] shadow-[2px_2px_0px_0px_rgba(0,35,111,1)] pointer-events-none'
+                      : 'bg-white border-[#757682] hover:border-[#00236f] shadow-[2px_2px_0px_0px_rgba(0,0,0,0.15)] active:translate-y-0.5'
+                  }`}
+                >
+                  <div className="w-10 h-10 border border-[#00236f] rounded overflow-hidden bg-[#e6e8ea] shrink-0">
+                    <img src={p.image} alt={p.name} style={{ imageRendering: 'pixelated' }} className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs text-[#191c1e]">{p.name}</h4>
+                    <span className="text-[9px] uppercase tracking-widest text-[#545560]">{p.diff}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
     )
   }
@@ -341,12 +455,7 @@ export const CombatScreen: React.FC<CombatScreenProps> = ({ customLevelData }) =
           )}
         </div>
 
-        {c.fillerWarning && (
-          <div className="flex items-center gap-1.5 text-[10px] text-amber-600 font-mono font-bold bg-amber-50 p-2 rounded border border-amber-200">
-            <AlertTriangle size={12} />
-            Filler words detected — stutter penalty applies!
-          </div>
-        )}
+
 
         {/* Action Button Dock */}
         <div className="flex gap-3">

@@ -26,18 +26,24 @@ Working:
 - **RAG-Backed Grading**: PDF document chunking, embedding, and cosine similarity lookup implemented. When presenting defenses, relevant context blocks are retrieved and passed to the LLM to guide grading accuracy.
 - **Dynamic Hints & styled Prompts**: Implemented `useHintController.ts` which generates styled open-ended questions based on the active professor's personality (Reyes is mean/demanding, Santos is kind, etc.) and calls the AI provider to generate RAG-supported hints that append directly to the courtroom log.
 - **Controller-per-Feature Architecture**: Added independent hooks `useDocumentController`, `useGradingController`, `useEvidenceController`, `useProfileController`, `useScheduleController`, and `useHintController` to isolate core logic without touching UI `.tsx` screens.
+- **Controller Screen Connections**: Connected `useEvidenceController`, `useProfileController`, and `useScheduleController` directly into `EvidenceScreen.tsx`, `ProfileScreen.tsx`, and `ScheduleScreen.tsx` to drive stats, level progression, and evidence items from active hook states.
+- **Supabase SSR Helpers**: Configured `utils/supabase/server.ts`, `utils/supabase/client.ts`, and `utils/supabase/middleware.ts` for cookie-based session management, as well as Next.js page template in `page.tsx` and `.env.local` parameters.
+- **Prisma Integration**: Installed `prisma` and `@prisma/client`, and initialized `prisma/schema.prisma` mapping database tables `StudentProfile`, `TopicScore`, `LevelProgress`, and `SpeechRecord` pointing to Supabase PostgreSQL database via `DATABASE_URL` env variable.
+- **Stutter Removal**: Completely deleted filler warnings and stutter penalties from the combat loop and evaluation pipelines. Replaced stutter ratio tracking on the user profile screen with a dynamic win-rate metric.
+- **JSON Grading Config**: Created `src/data/gradingConfig.json` which externalizes system instructions, passing thresholds, default damage variables, and fallback keyword arrays out of typescript code files.
+- **GISADO KA Defeat Display**: Implemented a bold, neo-brutalist bright-red box notification overlay when player health is depleted, prompting the player to restart their defense.
 - **Build Cleanliness**: App compiles and builds successfully via `npm run build` (tsc and Vite bundle generation complete with zero errors).
 
 In progress:
-- Connecting new controllers (`useEvidenceController`, `useProfileController`, `useScheduleController`) into their respective page views without visual design changes.
+- None.
 
 Blocked:
 - None.
 
 ## Last Meaningful Changes
-- Switched default LLM generation and grading pipeline from local Ollama to Gemini 2.5 Flash, while maintaining full fallback compatibility for local Ollama deployments via a simple `.env` switch.
-- Fixed TypeScript compile warnings/unused variables on page views.
-- Wired up the hint button to `handleAskForHint` and changed the cross-examination heading to bind to the professor-styled dynamic prompt.
+- Removed filler warning logic, stutter statistics, and ASR penalty parameters across combat screens, profile pages, and grading controllers.
+- Created `gradingConfig.json` configuration and linked it to the grading pipeline.
+- Added huge red defeat banner "GISADO KA!" on player defeat in `CombatScreen.tsx`.
 
 ## Risks or Stale Facts
 - If running Ollama, embeddings are not generated natively, so the RAG pipeline automatically falls back to keyword similarity ranking (tested and operational).
@@ -46,5 +52,4 @@ Blocked:
 - Real-time Deepgram speech transcription needs integration with the mock microphone recording state.
 
 ## Next Focus
-1. Connect `useEvidenceController`, `useProfileController`, and `useScheduleController` state models directly to the view files (`EvidenceScreen.tsx`, `ProfileScreen.tsx`, `ScheduleScreen.tsx`) to supply dynamic mock details without changing any visual styling.
-2. Hook up active level completion in the combat screen loop to update progress via `useScheduleController`.
+1. Continue fine-tuning personalized professor hint structures.

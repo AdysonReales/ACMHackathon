@@ -1,45 +1,12 @@
 import React from 'react'
 import { Briefcase, FileText, Check, Music, HelpCircle } from 'lucide-react'
 
-interface EvidenceItem {
-  id: string
-  title: string
-  description: string
-  status: 'proven' | 'unconfirmed' | 'disputed'
-  category: 'taglish_term' | 'logic_proof' | 'dataset'
-}
+
+
+import { useEvidenceController } from '../controllers/useEvidenceController'
 
 export const EvidenceScreen: React.FC = () => {
-  const evidenceList: EvidenceItem[] = [
-    {
-      id: 'EV-101',
-      title: 'Taglish "Kasi" Connective',
-      description: 'Used as an explanatory connector in informal classroom explanations.',
-      status: 'proven',
-      category: 'taglish_term'
-    },
-    {
-      id: 'EV-102',
-      title: 'Propositional Truth Claim',
-      description: 'Boolean matrix verifying that P -> Q is false only when P is true and Q is false.',
-      status: 'proven',
-      category: 'logic_proof'
-    },
-    {
-      id: 'EV-103',
-      title: 'Speech Dataset Log #4',
-      description: 'Contains 12 seconds of Taglish audio recording from Discrete Math Level 1.',
-      status: 'proven',
-      category: 'dataset'
-    },
-    {
-      id: 'EV-104',
-      title: 'Venn Diagram Paradox',
-      description: 'Disputed relation between sets showing overlapping boundary parameters.',
-      status: 'unconfirmed',
-      category: 'logic_proof'
-    }
-  ]
+  const { evidence } = useEvidenceController()
 
   return (
     <div className="w-full max-w-lg mx-auto pt-8 px-4 flex flex-col gap-6 pb-12 font-['Space_Grotesk']">
@@ -51,8 +18,9 @@ export const EvidenceScreen: React.FC = () => {
 
       {/* Grid of Evidence Cards */}
       <div className="bg-[#f2f4f6] border-2 border-[#00236f] p-5 flex flex-col gap-4">
-        {evidenceList.map((item) => {
+        {evidence.map((item) => {
           const isProven = item.status === 'proven'
+          const category = item.category || 'logic_proof'
           return (
             <div 
               key={item.id}
@@ -60,9 +28,9 @@ export const EvidenceScreen: React.FC = () => {
             >
               {/* Category Icon */}
               <div className="w-12 h-12 border-2 border-[#00236f] bg-[#e6e8ea] flex-shrink-0 flex items-center justify-center text-[#00236f]">
-                {item.category === 'taglish_term' && <Music size={20} />}
-                {item.category === 'logic_proof' && <FileText size={20} />}
-                {item.category === 'dataset' && <Briefcase size={20} />}
+                {category === 'taglish_term' && <Music size={20} />}
+                {category === 'logic_proof' && <FileText size={20} />}
+                {category === 'dataset' && <Briefcase size={20} />}
               </div>
 
               {/* Text Info */}
@@ -84,12 +52,12 @@ export const EvidenceScreen: React.FC = () => {
                 </div>
 
                 <h3 className="font-bold text-[#191c1e] text-sm">{item.title}</h3>
-                <p className="text-[10px] text-[#545560] leading-relaxed font-bold">{item.description}</p>
+                <p className="text-[10px] text-[#545560] leading-relaxed font-bold">{item.description_bilingual}</p>
                 
                 {/* Category tag */}
                 <div className="mt-1">
                   <span className="text-[8px] font-bold text-[#00236f] uppercase underline decoration-2 underline-offset-2">
-                    {item.category.replace('_', ' ')}
+                    {category.replace('_', ' ')}
                   </span>
                 </div>
               </div>

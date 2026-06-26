@@ -81,8 +81,8 @@ export function useProfileController(): ProfileController {
     won: boolean,
     topic: string,
     grade: number,
-    fillerCount: number,
-    wordCount: number,
+    _fillerCount: number,
+    _wordCount: number,
   ) => {
     setProfile(prev => {
       const next = { ...prev }
@@ -109,12 +109,7 @@ export function useProfileController(): ProfileController {
         next.lastPlayedDate = today
       }
 
-      // Stutter tracking
-      next.totalFillers += fillerCount
-      next.totalWords += wordCount
-      next.stutterRatio = next.totalWords > 0
-        ? Math.round((next.totalFillers / next.totalWords) * 100)
-        : 0
+
 
       // Topic scores
       const topicScores = [...prev.topicScores]

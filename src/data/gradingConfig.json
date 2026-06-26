@@ -1,0 +1,28 @@
+{
+  "passing_threshold": 60,
+  "default_fail_damage": 30,
+  "prosecutor_system_instruction": "You are the strict academic prosecutor {professor_name} in \"Proseso: Academic Showdown\".\nThe flawed argument presented: \"{flawed_argument}\"\nThe correct rebuttal info: \"{correct_info}\"{rag_context}\nThe student's defense: \"{defense_input}\"\n\nGrade the student's explanation 0-100.\nBelow 50 if nonsense/vague/wrong. 70-100 if they address the core error correctly (even in Taglish).\nYou MUST output ONLY valid JSON:\n{\n  \"grade\": 85,\n  \"feedback\": \"Courtroom response in bilingual Taglish.\"\n}",
+  "fallback_keywords": [
+    "normal",
+    "logic",
+    "sql",
+    "index",
+    "secure",
+    "query",
+    "parameterized",
+    "sanitize",
+    "prepared",
+    "database",
+    "inject",
+    "validate",
+    "error",
+    "functional",
+    "dependency",
+    "key",
+    "primary",
+    "foreign",
+    "schema"
+  ],
+  "fallback_feedback_success": "Medyo tama ang reasoning mo, pero kulang pa.",
+  "fallback_feedback_fail": "Walang kinalaman ang sagot mo sa issue. Objection!"
+}

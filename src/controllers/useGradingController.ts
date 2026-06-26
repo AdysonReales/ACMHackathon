@@ -2,17 +2,16 @@
 // CONTROLLER — RAG-based Defense Grading
 // ============================================================
 // Retrieves relevant document chunks, sends to AI for grading.
+// Consumes parameters from centralized gradingConfig.json.
 // Used by: useCombatController (internally)
 
 import { useCallback } from 'react'
 import { getAIProvider } from '../lib/aiProvider'
 import type { CombatPhase, EvidenceCard, LevelData, TurnFeedback } from '../models/types'
-
-const FILLER_KEYWORDS = ['ano', 'like', 'you know', 'uh', 'um', 'actually', 'kasi', 'parang']
+import gradingConfig from '../data/gradingConfig.json'
 
 export interface GradeResult {
   feedback: TurnFeedback
-  stutterPenalty: number
   rawGrade: number
   damage: number
 }
@@ -26,10 +25,6 @@ export function useGradingController(
     currentEvidence: EvidenceCard | undefined,
     levelData: LevelData,
   ): Promise<GradeResult> => {
-    // --- Stutter penalty ---
-    const words = defenseInput.toLowerCase().split(/\s+/)
-    const foundFillers = words.filter(w => FILLER_KEYWORDS.includes(w))
-    const stutterPenalty = foundFillers.length * 4
 
     // --- RAG: retrieve relevant document chunks ---
     const relevantChunks = await retrieveChunks(
@@ -42,18 +37,13 @@ export function useGradingController(
 
     const correctInfo = currentEvidence?.description_bilingual || ''
 
-    const gradingPrompt = `You are the strict academic prosecutor ${levelData.professor_name} in "Proseso: Academic Showdown".
-The flawed argument presented: "${currentPhase.flawed_argument}"
-The correct rebuttal info: "${correctInfo}"${ragContext}
-The student's defense: "${defenseInput}"
-
-Grade the student's explanation 0-100.
-Below 50 if nonsense/vague/wrong. 70-100 if they address the core error correctly (even in Taglish).
-You MUST output ONLY valid JSON:
-{
-  "grade": 85,
-  "feedback": "Courtroom response in bilingual Taglish."
-}`
+    // Format grading prompt using JSON configuration template
+    const gradingPrompt = gradingConfig.prosecutor_system_instruction
+      .replace('{professor_name}', levelData.professor_name)
+      .replace('{flawed_argument}', currentPhase.flawed_argument)
+      .replace('{correct_info}', correctInfo)
+      .replace('{rag_context}', ragContext)
+      .replace('{defense_input}', defenseInput)
 
     let finalGrade = 0
     let aiFeedback = ''
@@ -67,26 +57,25 @@ You MUST output ONLY valid JSON:
       finalGrade = parsed.grade ?? 50
       aiFeedback = parsed.feedback ?? 'No feedback.'
     } catch {
-      // Fallback: keyword matching
+      // Fallback: keyword matching using JSON keywords config
+      const words = defenseInput.toLowerCase().split(/\s+/)
       const hasKeywords = words.some(w =>
-        ['normal', 'logic', 'sql', 'index', 'secure', 'query', 'parameterized',
-         'sanitize', 'prepared', 'database', 'inject', 'validate', 'error'].includes(w)
+        gradingConfig.fallback_keywords.includes(w)
       )
       finalGrade = hasKeywords ? 75 : 40
       aiFeedback = hasKeywords
-        ? 'Medyo tama ang reasoning mo, pero kulang pa.'
-        : 'Walang kinalaman ang sagot mo sa issue. Objection!'
+        ? gradingConfig.fallback_feedback_success
+        : gradingConfig.fallback_feedback_fail
     }
 
-    const damage = Math.max(0, finalGrade - stutterPenalty)
+    const damage = finalGrade
 
     return {
       feedback: {
-        type: finalGrade >= 60 ? 'success' : 'fail',
+        type: finalGrade >= gradingConfig.passing_threshold ? 'success' : 'fail',
         grade: finalGrade,
         message: aiFeedback,
       },
-      stutterPenalty,
       rawGrade: finalGrade,
       damage,
     }

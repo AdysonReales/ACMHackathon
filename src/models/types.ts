@@ -17,6 +17,7 @@ export interface EvidenceCard {
   id: string
   title: string
   description_bilingual: string
+  category?: 'taglish_term' | 'logic_proof' | 'dataset'
 }
 
 export interface LevelData {
@@ -43,6 +44,13 @@ export interface TurnFeedback {
   message: string
 }
 
+export interface EvaluationResult {
+  logic: number
+  clarity: number
+  poise: number
+  notes: string
+}
+
 // ---------- Controller Contracts ----------
 
 export interface AppController {
@@ -65,7 +73,6 @@ export interface CombatState {
   screenShake: boolean
   combatLog: string[]
   waitingNextTurn: boolean
-  fillerWarning: boolean
   opponentName: string
   phaseNumber: number
   totalPhases: number
@@ -74,6 +81,7 @@ export interface CombatState {
   hint: string | null
   isGeneratingHint: boolean
   styledPrompt: string
+  evaluation: EvaluationResult | null
 }
 
 export interface CombatActions {
@@ -84,4 +92,5 @@ export interface CombatActions {
   setDefenseInput: (value: string) => void
   setSelectedProf: (profId: string) => void
   handleAskForHint: () => Promise<void>
+  changeOpponent: (profId: string) => Promise<void>
 }

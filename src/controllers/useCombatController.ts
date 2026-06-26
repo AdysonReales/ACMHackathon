@@ -1,15 +1,18 @@
 // ============================================================
 // CONTROLLER — Combat gameplay state + all business logic
 // ============================================================
-// Refactored: delegates AI calls to useDocumentController (RAG),
+// Delegates AI calls to useDocumentController (RAG),
 // useGradingController, and useHintController.
-// Supports both Gemini 2.5 and Ollama backends.
+// Also synchronizes results with useScheduleController and useProfileController.
 
 import { useState, useEffect, useMemo } from 'react'
 import { useDocumentController } from './useDocumentController'
 import { useGradingController } from './useGradingController'
 import { useHintController } from './useHintController'
-import type { LevelData, ScreenState, TurnFeedback, CombatState, CombatActions } from '../models/types'
+import { useScheduleController } from './useScheduleController'
+import { useProfileController } from './useProfileController'
+import { getAIProvider } from '../lib/aiProvider'
+import type { LevelData, ScreenState, TurnFeedback, CombatState, CombatActions, EvaluationResult } from '../models/types'
 
 export const useCombatController = (
   initialCustomData?: LevelData | null
@@ -18,6 +21,8 @@ export const useCombatController = (
   const doc = useDocumentController()
   const { gradeDefense } = useGradingController(doc.retrieveChunks)
   const hintCtrl = useHintController()
+  const scheduleCtrl = useScheduleController()
+  const profileCtrl = useProfileController()
 
   // ---------- State ----------
   const [screen, setScreen] = useState<ScreenState>(initialCustomData ? 'battle' : 'upload')
@@ -34,6 +39,8 @@ export const useCombatController = (
   const [screenShake, setScreenShake] = useState(false)
   const [combatLog, setCombatLog] = useState<string[]>([])
   const [waitingNextTurn, setWaitingNextTurn] = useState(false)
+  const [turnGrades, setTurnGrades] = useState<number[]>([])
+  const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null)
 
   // ---------- Sync from prop ----------
   useEffect(() => {
@@ -55,6 +62,8 @@ export const useCombatController = (
     setTurnFeedback(null)
     setScreenShake(false)
     setWaitingNextTurn(false)
+    setTurnGrades([])
+    setEvaluation(null)
     hintCtrl.clearHint()
     setCombatLog([
       `⚖️ Court is in session! ${data.professor_name} challenges your understanding.`,
@@ -109,6 +118,10 @@ export const useCombatController = (
     setScreenShake(true)
     setTimeout(() => setScreenShake(false), 500)
 
+    // Track grades
+    const updatedGrades = [...turnGrades, result.rawGrade]
+    setTurnGrades(updatedGrades)
+
     if (result.feedback.type === 'success') {
       // --- SUCCESS ---
       const nextOppHp = Math.max(0, opponentHp - result.damage)
@@ -124,9 +137,63 @@ export const useCombatController = (
       setIsGrading(false)
       hintCtrl.clearHint() // clear hint for next turn
 
-      setTimeout(() => {
+      setTimeout(async () => {
         if (nextOppHp <= 0) {
+          const avgGrade = updatedGrades.reduce((a, b) => a + b, 0) / updatedGrades.length
+
+          // Sync progression in schedule map and user profile
+          scheduleCtrl.completeLevelWithGrade(levelData.level_id, avgGrade)
+          profileCtrl.recordBattleResult(
+            true,
+            levelData.subject || 'Discrete Math',
+            avgGrade,
+            0,
+            defenseInput.split(/\s+/).length
+          )
+
+          // Personalized stats calculation
+          const logic = Math.round(avgGrade)
+          const clarity = Math.max(50, Math.min(100, Math.round(logic + (Math.random() * 8 - 4))))
+          const hintCount = combatLog.filter(log => log.includes('💡 Hint requested')).length
+          const poise = Math.max(40, 100 - (hintCount * 15))
+
+          setEvaluation({
+            logic,
+            clarity,
+            poise,
+            notes: "Writing bench notes..."
+          })
           setScreen('victory')
+
+          // Ask AI provider to generate personalized bench notes summary based on logs
+          try {
+            const provider = await getAIProvider()
+            const summaryPrompt = `You are the academic opponent ${levelData.professor_name} evaluating the student's performance.
+Subject: ${levelData.subject}
+Final Grade: ${logic}%
+Courtroom feed logs from the match:
+${combatLog.filter(l => l.startsWith('✅') || l.startsWith('❌')).join('\n')}
+
+Summarize the student's performance in exactly two short sentences of Taglish. Highlight their logical clarity and suggest what specific topic they should review next.`
+            
+            const parsed = await provider.generateJSON<{ notes: string }>(
+              summaryPrompt,
+              "Generate personalized evaluation bench notes."
+            )
+            setEvaluation({
+              logic,
+              clarity,
+              poise,
+              notes: parsed.notes || "Thesis accepted. Good overall reasoning."
+            })
+          } catch {
+            setEvaluation({
+              logic,
+              clarity,
+              poise,
+              notes: `Magandang gilas ang ipinakita mo sa ${levelData.subject}. Nakakuha ka ng average grade na ${logic}%. Pag-aralan pa ang mga key points ng lecture.`
+            })
+          }
           return
         }
 
@@ -168,6 +235,15 @@ export const useCombatController = (
 
       setTimeout(() => {
         if (nextPlayerHp <= 0) {
+          // Sync loss in user profile
+          profileCtrl.recordBattleResult(
+            false,
+            levelData.subject || 'Discrete Math',
+            0,
+            0,
+            defenseInput.split(/\s+/).length
+          )
+
           setScreen('defeat')
           return
         }
@@ -177,14 +253,14 @@ export const useCombatController = (
     }
   }
 
-  // Mic mock (same as original)
+  // Mic mock (stutter filler words removed)
   const handleMicTap = () => {
     if (isRecording) {
       setIsRecording(false)
       const phrases = [
-        'Kasi ano, database normalization prevents duplicates parang relational structure.',
+        'Database normalization prevents duplicates in a relational structure.',
         'Prepared statements dynamically sanitize input text parameters.',
-        'Mali po ang premise. Propositions are logically parsed using truth tables.',
+        'Propositions are logically parsed using truth tables.',
       ]
       setDefenseInput(phrases[Math.floor(Math.random() * phrases.length)])
     } else {
@@ -214,6 +290,24 @@ export const useCombatController = (
     ])
   }
 
+  const changeOpponent = async (profId: string) => {
+    if (!doc.rawText) {
+      setSelectedProf(profId)
+      setScreen('upload')
+      return
+    }
+
+    setSelectedProf(profId)
+    setScreen('compiling')
+    try {
+      const parsed = await doc.compileLevelFromText(doc.rawText, profId)
+      startBattle(parsed)
+    } catch (err) {
+      console.error(err)
+      setScreen('upload')
+    }
+  }
+
   const resetAll = () => {
     setScreen('upload')
     setLevelData(null)
@@ -224,15 +318,12 @@ export const useCombatController = (
     setCombatLog([])
     setTurnFeedback(null)
     setWaitingNextTurn(false)
+    setTurnGrades([])
+    setEvaluation(null)
     doc.setError(null)
     doc.setProgress(0)
     hintCtrl.clearHint()
   }
-
-  // ---------- Derived state ----------
-  const FILLER_KEYWORDS = ['ano', 'like', 'you know', 'uh', 'um', 'actually', 'kasi', 'parang']
-  const words = defenseInput.toLowerCase().split(/\s+/)
-  const fillerWarning = !!(defenseInput.trim() && words.some(w => FILLER_KEYWORDS.includes(w)))
 
   const opponentName = levelData?.professor_name || 'Prosecutor'
   const phaseNumber = currentPhaseIndex + 1
@@ -254,7 +345,6 @@ export const useCombatController = (
     screenShake,
     combatLog,
     waitingNextTurn,
-    fillerWarning,
     opponentName,
     phaseNumber,
     totalPhases,
@@ -263,6 +353,7 @@ export const useCombatController = (
     hint: hintCtrl.hint,
     isGeneratingHint: hintCtrl.isGeneratingHint,
     styledPrompt,
+    evaluation,
     // Actions
     handleFileUpload,
     handleSubmitDefense,
@@ -271,5 +362,6 @@ export const useCombatController = (
     setDefenseInput,
     setSelectedProf,
     handleAskForHint,
+    changeOpponent,
   }
 }
