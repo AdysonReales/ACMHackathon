@@ -1,25 +1,33 @@
 // ============================================================
 // CONTROLLER — Combat gameplay state + all business logic
 // ============================================================
+// Delegates AI calls to useDocumentController (RAG),
+// useGradingController, and useHintController.
+// Also synchronizes results with useScheduleController and useProfileController.
 
-import { useState, useEffect } from 'react'
-import * as pdfjsLib from 'pdfjs-dist'
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
-import type { LevelData, ScreenState, TurnFeedback, CombatState, CombatActions } from '../models/types'
-
-// Configure PDF.js worker (local, no CDN)
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
-
-const FILLER_KEYWORDS = ['ano', 'like', 'you know', 'uh', 'um', 'actually', 'kasi', 'parang']
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useDocumentController } from './useDocumentController'
+import { useGradingController } from './useGradingController'
+import { useHintController } from './useHintController'
+import { useScheduleController } from './useScheduleController'
+import { useProfileController } from './useProfileController'
+import { getAIProvider } from '../lib/aiProvider'
+import type { LevelData, ScreenState, TurnFeedback, CombatState, CombatActions, EvaluationResult } from '../models/types'
 
 export const useCombatController = (
   initialCustomData?: LevelData | null
 ): CombatState & CombatActions => {
+  // ---------- Sub-controllers ----------
+  const doc = useDocumentController()
+  const { gradeDefense } = useGradingController(doc.retrieveChunks)
+  const hintCtrl = useHintController()
+  const scheduleCtrl = useScheduleController()
+  const profileCtrl = useProfileController()
+
   // ---------- State ----------
   const [screen, setScreen] = useState<ScreenState>(initialCustomData ? 'battle' : 'upload')
   const [levelData, setLevelData] = useState<LevelData | null>(initialCustomData || null)
-  const [compileProgress, setCompileProgress] = useState(0)
-  const [compileError, setCompileError] = useState<string | null>(null)
+  const [selectedProf, setSelectedProf] = useState<string>('reyes')
 
   const [playerHp, setPlayerHp] = useState(100)
   const [opponentHp, setOpponentHp] = useState(100)
@@ -31,6 +39,8 @@ export const useCombatController = (
   const [screenShake, setScreenShake] = useState(false)
   const [combatLog, setCombatLog] = useState<string[]>([])
   const [waitingNextTurn, setWaitingNextTurn] = useState(false)
+  const [turnGrades, setTurnGrades] = useState<number[]>([])
+  const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null)
 
   // ---------- Sync from prop ----------
   useEffect(() => {
@@ -52,98 +62,13 @@ export const useCombatController = (
     setTurnFeedback(null)
     setScreenShake(false)
     setWaitingNextTurn(false)
+    setTurnGrades([])
+    setEvaluation(null)
+    hintCtrl.clearHint()
     setCombatLog([
       `⚖️ Court is in session! ${data.professor_name} challenges your understanding.`,
     ])
     setScreen('battle')
-  }
-
-  const extractTextFromPdf = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer()
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-    const pages: string[] = []
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i)
-      const content = await page.getTextContent()
-      const strings = content.items
-        .filter((item: any) => 'str' in item)
-        .map((item: any) => item.str)
-      pages.push(strings.join(' '))
-    }
-
-    return pages.join('\n\n')
-  }
-
-  const compileLevelFromText = async (text: string, _fileName: string) => {
-    setCompileProgress(25)
-
-    const systemPrompt = `You are a curriculum compiler for the game "Proseso: Academic Showdown".
-Analyze the user text and create exactly 2 to 3 turn-based combat phases based on the ACTUAL CONTENT of the document.
-Each phase contains a flawed academic argument derived from the document's topics, the correct evidence id, and a follow-up prompt.
-You MUST output ONLY a valid JSON object. No other prose, no markdown.
-
-JSON structure:
-{
-  "level_id": 105,
-  "professor_name": "Dr. Arboleda",
-  "professor_sprite": "prof_strict_01",
-  "combat_phases": [
-    {
-      "phase_id": 1,
-      "flawed_argument": "A flawed statement BASED ON the document content that the student must refute.",
-      "contradictory_evidence_id": "ev_unique_id",
-      "follow_up_prompt": "A follow up question in Taglish asking the student to explain the correct concept."
-    }
-  ],
-  "evidence_deck": [
-    {
-      "id": "ev_unique_id",
-      "title": "Title of the evidence card",
-      "description_bilingual": "Correct explanation starting with 'Mali! (Objection!) ...' in bilingual Taglish."
-    }
-  ]
-}`
-
-    try {
-      setCompileProgress(40)
-      const response = await fetch('/api-ollama/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'phi3',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Compile this academic text into a showdown level:\n\n${text.substring(0, 6000)}` }
-          ],
-          format: 'json',
-          stream: false
-        })
-      })
-
-      setCompileProgress(70)
-      if (!response.ok) {
-        throw new Error(`Ollama server error (status ${response.status}). Is Ollama running?`)
-      }
-
-      const data = await response.json()
-      const rawJson = data.message?.content
-      if (!rawJson) throw new Error('Empty response from Ollama.')
-
-      setCompileProgress(90)
-      const parsed: LevelData = JSON.parse(rawJson.trim())
-
-      if (!parsed.combat_phases?.length || !parsed.evidence_deck?.length) {
-        throw new Error('AI returned incomplete level data. Try again.')
-      }
-
-      setCompileProgress(100)
-      startBattle(parsed)
-    } catch (err: any) {
-      console.error(err)
-      setCompileError(err.message)
-      setScreen('upload')
-    }
   }
 
   // ---------- Public actions ----------
@@ -153,26 +78,19 @@ JSON structure:
     if (!file) return
 
     setScreen('compiling')
-    setCompileProgress(10)
-    setCompileError(null)
+    doc.setError(null)
 
     try {
-      let text = ''
+      // 1. Process document (extract + chunk + embed)
+      const { text } = await doc.processDocument(file)
 
-      if (file.name.toLowerCase().endsWith('.pdf')) {
-        setCompileProgress(15)
-        text = await extractTextFromPdf(file)
-        if (!text.trim()) {
-          throw new Error('PDF has no extractable text (might be scanned images). Use a text-based PDF.')
-        }
-      } else {
-        text = await file.text()
-      }
+      // 2. Compile level from document text via AI (Gemini or Ollama) passing selected personality style
+      const parsed = await doc.compileLevelFromText(text, selectedProf)
 
-      await compileLevelFromText(text, file.name)
+      // 3. Start the battle
+      startBattle(parsed)
     } catch (err: any) {
       console.error(err)
-      setCompileError(err.message)
       setScreen('upload')
     }
   }
@@ -182,90 +100,100 @@ JSON structure:
     ev => ev.id === currentPhase?.contradictory_evidence_id
   )
 
+  // Derived styled open-ended prompt matching active professor
+  const styledPrompt = useMemo(() => {
+    return hintCtrl.getStyledPrompt(selectedProf, currentPhase)
+  }, [selectedProf, currentPhase, hintCtrl])
+
   const handleSubmitDefense = async () => {
     if (!defenseInput.trim() || isGrading || !currentPhase || !levelData || waitingNextTurn) return
 
     setIsGrading(true)
     setTurnFeedback(null)
 
-    const words = defenseInput.toLowerCase().split(/\s+/)
-    const foundFillers = words.filter(w => FILLER_KEYWORDS.includes(w))
-    const stutterPenalty = foundFillers.length * 4
-
-    const correctInfo = currentEvidence?.description_bilingual || ''
-
-    const gradingPrompt = `You are the strict academic prosecutor ${levelData.professor_name} in "Proseso: Academic Showdown".
-The flawed argument: "${currentPhase.flawed_argument}"
-The correct rebuttal info: "${correctInfo}"
-The student's defense: "${defenseInput}"
-
-Grade the student's explanation 0-100.
-Below 50 if nonsense/vague/wrong. 70-100 if they address the core error correctly (even in Taglish).
-Output ONLY JSON:
-{
-  "grade": 85,
-  "feedback": "Courtroom response in bilingual Taglish."
-}`
-
-    let finalGrade = 0
-    let aiFeedback = ''
-
-    try {
-      const response = await fetch('/api-ollama/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'phi3',
-          messages: [
-            { role: 'system', content: gradingPrompt },
-            { role: 'user', content: `Grade: "${defenseInput}"` }
-          ],
-          format: 'json',
-          stream: false
-        })
-      })
-
-      if (!response.ok) throw new Error('Grading failed')
-
-      const data = await response.json()
-      const parsed = JSON.parse(data.message?.content.trim())
-      finalGrade = parsed.grade ?? 50
-      aiFeedback = parsed.feedback ?? 'No feedback.'
-    } catch {
-      // Fallback keyword matching
-      const hasKeywords = words.some(w =>
-        ['normal', 'logic', 'sql', 'index', 'secure', 'query', 'parameterized',
-         'sanitize', 'prepared', 'database', 'inject', 'validate', 'error'].includes(w)
-      )
-      finalGrade = hasKeywords ? 75 : 40
-      aiFeedback = hasKeywords
-        ? "Medyo tama ang reasoning mo, pero kulang pa."
-        : "Walang kinalaman ang sagot mo sa issue. Objection!"
-    }
-
-    const damage = Math.max(0, finalGrade - stutterPenalty)
+    // --- Delegate grading to useGradingController (RAG-powered) ---
+    const result = await gradeDefense(defenseInput, currentPhase, currentEvidence, levelData)
 
     // Screen shake
     setScreenShake(true)
     setTimeout(() => setScreenShake(false), 500)
 
-    if (finalGrade >= 60) {
+    // Track grades
+    const updatedGrades = [...turnGrades, result.rawGrade]
+    setTurnGrades(updatedGrades)
+
+    if (result.feedback.type === 'success') {
       // --- SUCCESS ---
-      const nextOppHp = Math.max(0, opponentHp - damage)
+      const nextOppHp = Math.max(0, opponentHp - result.damage)
       setOpponentHp(nextOppHp)
-      setTurnFeedback({ type: 'success', grade: damage, message: aiFeedback })
+      setTurnFeedback(result.feedback)
 
       setCombatLog(prev => [
-        `✅ Grade: ${finalGrade}% | Damage: ${damage} | ${aiFeedback}`,
-        ...prev
+        `✅ Grade: ${result.rawGrade}% | Damage: ${result.damage} | ${result.feedback.message}`,
+        ...prev,
       ])
 
       setWaitingNextTurn(true)
       setIsGrading(false)
+      hintCtrl.clearHint() // clear hint for next turn
 
-      setTimeout(() => {
+      setTimeout(async () => {
         if (nextOppHp <= 0) {
+          const avgGrade = updatedGrades.reduce((a, b) => a + b, 0) / updatedGrades.length
+
+          // Sync progression in schedule map and user profile
+          scheduleCtrl.completeLevelWithGrade(levelData.level_id, avgGrade)
+          profileCtrl.recordBattleResult(
+            true,
+            levelData.subject || 'Discrete Math',
+            avgGrade,
+            0,
+            defenseInput.split(/\s+/).length
+          )
+
+          // Personalized stats calculation
+          const logic = Math.round(avgGrade)
+          const clarity = Math.max(50, Math.min(100, Math.round(logic + (Math.random() * 8 - 4))))
+          const hintCount = combatLog.filter(log => log.includes('💡 Hint requested')).length
+          const poise = Math.max(40, 100 - (hintCount * 15))
+
+          setEvaluation({
+            logic,
+            clarity,
+            poise,
+            notes: "Writing bench notes..."
+          })
           setScreen('victory')
+
+          // Ask AI provider to generate personalized bench notes summary based on logs
+          try {
+            const provider = await getAIProvider()
+            const summaryPrompt = `You are the academic opponent ${levelData.professor_name} evaluating the student's performance.
+Subject: ${levelData.subject}
+Final Grade: ${logic}%
+Courtroom feed logs from the match:
+${combatLog.filter(l => l.startsWith('✅') || l.startsWith('❌')).join('\n')}
+
+Summarize the student's performance in exactly two short sentences of Taglish. Highlight their logical clarity and suggest what specific topic they should review next.`
+            
+            const parsed = await provider.generateJSON<{ notes: string }>(
+              summaryPrompt,
+              "Generate personalized evaluation bench notes."
+            )
+            setEvaluation({
+              logic,
+              clarity,
+              poise,
+              notes: parsed.notes || "Thesis accepted. Good overall reasoning."
+            })
+          } catch {
+            setEvaluation({
+              logic,
+              clarity,
+              poise,
+              notes: `Magandang gilas ang ipinakita mo sa ${levelData.subject}. Nakakuha ka ng average grade na ${logic}%. Pag-aralan pa ang mga key points ng lecture.`
+            })
+          }
           return
         }
 
@@ -275,14 +203,14 @@ Output ONLY JSON:
           setCurrentPhaseIndex(nextIdx)
           setCombatLog(prev => [
             `📋 Phase ${nextIdx + 1}: New accusation incoming...`,
-            ...prev
+            ...prev,
           ])
         } else {
-          // All phases done, opponent still alive — loop back
+          // All phases done, opponent still alive — loop
           setCurrentPhaseIndex(0)
           setCombatLog(prev => [
             `🔄 Prosecutor circles back with more arguments...`,
-            ...prev
+            ...prev,
           ])
         }
         setDefenseInput('')
@@ -295,11 +223,11 @@ Output ONLY JSON:
       const playerDmg = 30
       const nextPlayerHp = Math.max(0, playerHp - playerDmg)
       setPlayerHp(nextPlayerHp)
-      setTurnFeedback({ type: 'fail', grade: finalGrade, message: aiFeedback })
+      setTurnFeedback(result.feedback)
 
       setCombatLog(prev => [
-        `❌ Grade: ${finalGrade}% | You took ${playerDmg} damage | ${aiFeedback}`,
-        ...prev
+        `❌ Grade: ${result.rawGrade}% | You took ${playerDmg} damage | ${result.feedback.message}`,
+        ...prev,
       ])
 
       setWaitingNextTurn(true)
@@ -307,6 +235,15 @@ Output ONLY JSON:
 
       setTimeout(() => {
         if (nextPlayerHp <= 0) {
+          // Sync loss in user profile
+          profileCtrl.recordBattleResult(
+            false,
+            levelData.subject || 'Discrete Math',
+            0,
+            0,
+            defenseInput.split(/\s+/).length
+          )
+
           setScreen('defeat')
           return
         }
@@ -316,27 +253,113 @@ Output ONLY JSON:
     }
   }
 
-  // Mic mock
-  const handleMicTap = () => {
-    if (isRecording) {
+  // ---------- Real Speech-to-Text via Web Speech API ----------
+  const recognitionRef = useRef<any>(null)
+  const isRecordingRef = useRef(false)
+
+  const handleMicTap = useCallback(() => {
+    // Already recording → stop
+    if (isRecordingRef.current) {
+      isRecordingRef.current = false
       setIsRecording(false)
-      const phrases = [
-        'Kasi ano, database normalization prevents duplicates parang relational structure.',
-        'Prepared statements dynamically sanitize input text parameters.',
-        'Mali po ang premise. Propositions are logically parsed using truth tables.'
-      ]
-      setDefenseInput(phrases[Math.floor(Math.random() * phrases.length)])
-    } else {
-      setIsRecording(true)
-      setDefenseInput('')
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+        recognitionRef.current = null
+      }
+      return
+    }
+
+    // Check browser support
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      console.warn('[Mic] SpeechRecognition not supported in this browser.')
+      setDefenseInput(prev => prev + ' [Voice input not supported — use Chrome or Edge.]')
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.continuous = true
+    recognition.interimResults = false  // only fire when a phrase is finalized
+    recognition.lang = 'en-PH'         // English (Philippines) — handles Taglish well
+
+    recognition.onresult = (event: any) => {
+      let transcript = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          transcript += event.results[i][0].transcript + ' '
+        }
+      }
+      if (transcript.trim()) {
+        setDefenseInput(prev => (prev ? prev + ' ' : '') + transcript.trim())
+      }
+    }
+
+    recognition.onerror = (event: any) => {
+      // "no-speech" and "aborted" are non-fatal — don't kill the session
+      if (event.error === 'no-speech' || event.error === 'aborted') return
+      console.error('[Mic] Speech recognition error:', event.error)
+      isRecordingRef.current = false
+      setIsRecording(false)
+      recognitionRef.current = null
+    }
+
+    recognition.onend = () => {
+      // Chrome kills continuous recognition after ~60s of silence; auto-restart if still recording
+      if (isRecordingRef.current) {
+        try { recognition.start() } catch { /* already running */ }
+      } else {
+        recognitionRef.current = null
+      }
+    }
+
+    recognitionRef.current = recognition
+    isRecordingRef.current = true
+    setIsRecording(true)
+    recognition.start()
+  }, [])
+
+  const handleAskForHint = async () => {
+    if (isGrading || waitingNextTurn || !currentPhase) return
+
+    // Retrieve relevant doc chunks to build accurate hint guidance
+    const chunks = await doc.retrieveChunks(`${currentPhase.flawed_argument}`, 2)
+
+    // Call hint controller to generate persona-styled hint
+    const hintText = await hintCtrl.generateHint(
+      selectedProf,
+      currentPhase,
+      currentEvidence,
+      chunks
+    )
+
+    // Append hint event to combat transcript log
+    setCombatLog(prev => [
+      `💡 Hint requested from ${opponentName}: "${hintText}"`,
+      ...prev,
+    ])
+  }
+
+  const changeOpponent = async (profId: string) => {
+    if (!doc.rawText) {
+      setSelectedProf(profId)
+      setScreen('upload')
+      return
+    }
+
+    setSelectedProf(profId)
+    setScreen('compiling')
+    try {
+      const parsed = await doc.compileLevelFromText(doc.rawText, profId)
+      startBattle(parsed)
+    } catch (err) {
+      console.error(err)
+      setScreen('upload')
     }
   }
 
   const resetAll = () => {
     setScreen('upload')
     setLevelData(null)
-    setCompileError(null)
-    setCompileProgress(0)
     setPlayerHp(100)
     setOpponentHp(100)
     setCurrentPhaseIndex(0)
@@ -344,11 +367,12 @@ Output ONLY JSON:
     setCombatLog([])
     setTurnFeedback(null)
     setWaitingNextTurn(false)
+    setTurnGrades([])
+    setEvaluation(null)
+    doc.setError(null)
+    doc.setProgress(0)
+    hintCtrl.clearHint()
   }
-
-  // ---------- Derived state ----------
-  const words = defenseInput.toLowerCase().split(/\s+/)
-  const fillerWarning = !!(defenseInput.trim() && words.some(w => FILLER_KEYWORDS.includes(w)))
 
   const opponentName = levelData?.professor_name || 'Prosecutor'
   const phaseNumber = currentPhaseIndex + 1
@@ -358,8 +382,8 @@ Output ONLY JSON:
     // State
     screen,
     levelData,
-    compileProgress,
-    compileError,
+    compileProgress: doc.progress,
+    compileError: doc.error,
     playerHp,
     opponentHp,
     currentPhaseIndex,
@@ -370,16 +394,23 @@ Output ONLY JSON:
     screenShake,
     combatLog,
     waitingNextTurn,
-    fillerWarning,
     opponentName,
     phaseNumber,
     totalPhases,
     currentPhase,
+    selectedProf,
+    hint: hintCtrl.hint,
+    isGeneratingHint: hintCtrl.isGeneratingHint,
+    styledPrompt,
+    evaluation,
     // Actions
     handleFileUpload,
     handleSubmitDefense,
     handleMicTap,
     resetAll,
     setDefenseInput,
+    setSelectedProf,
+    handleAskForHint,
+    changeOpponent,
   }
 }

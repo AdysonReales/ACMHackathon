@@ -44,3 +44,5 @@ references/
 context/
 scripts/
 skills/
+
+/src/generated/prisma

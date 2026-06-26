@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model StudentProfile {
+  id           Int          @id @default(autoincrement())
+  displayName  String       @default("Scholar")
+  level        Int          @default(1)
+  xp           Int          @default(0)
+  xpToNext     Int          @default(100)
+  totalBattles Int          @default(0)
+  totalWins    Int          @default(0)
+  totalLosses  Int          @default(0)
+  dailyStreak  Int          @default(0)
+  stutterRatio Int          @default(0)
+  totalFillers Int          @default(0)
+  totalWords   Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  topicScores  TopicScore[]
+}
+
+model TopicScore {
+  id        Int            @id @default(autoincrement())
+  topic     String
+  correct   Int
+  total     Int
+  avgGrade  Float
+  profileId Int
+  profile   StudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model LevelProgress {
+  id         Int      @id @default(autoincrement())
+  levelId    Int      @unique
+  title      String
+  subject    String
+  status     String   // 'completed' | 'active' | 'locked'
+  difficulty String   // 'Basic' | 'Medium' | 'Hard'
+  stars      Int      @default(0)
+  bestGrade  Float    @default(0)
+  attempts   Int      @default(0)
+  updatedAt  DateTime @updatedAt
+}
+
+model SpeechRecord {
+  id           String   @id @default(uuid())
+  transcription String
+  audioUrl     String?
+  stutterCount Int
+  grade        Float
+  topic        String
+  professorId  String
+  createdAt    DateTime @default(now())
+}
