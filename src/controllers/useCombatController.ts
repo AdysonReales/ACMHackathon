@@ -5,7 +5,7 @@
 // useGradingController, and useHintController.
 // Also synchronizes results with useScheduleController and useProfileController.
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useDocumentController } from './useDocumentController'
 import { useGradingController } from './useGradingController'
 import { useHintController } from './useHintController'
@@ -253,21 +253,71 @@ Summarize the student's performance in exactly two short sentences of Taglish. H
     }
   }
 
-  // Mic mock (stutter filler words removed)
-  const handleMicTap = () => {
+  // ---------- Real Speech-to-Text via Web Speech API ----------
+  const recognitionRef = useRef<any>(null)
+
+  const handleMicTap = useCallback(() => {
+    // Already recording → stop
     if (isRecording) {
       setIsRecording(false)
-      const phrases = [
-        'Database normalization prevents duplicates in a relational structure.',
-        'Prepared statements dynamically sanitize input text parameters.',
-        'Propositions are logically parsed using truth tables.',
-      ]
-      setDefenseInput(phrases[Math.floor(Math.random() * phrases.length)])
-    } else {
-      setIsRecording(true)
-      setDefenseInput('')
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+        recognitionRef.current = null
+      }
+      return
     }
-  }
+
+    // Check browser support
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      console.warn('[Mic] SpeechRecognition not supported in this browser.')
+      setDefenseInput(prev => prev + ' [Voice input is not supported in this browser. Use Chrome or Edge.]')
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.lang = 'en-PH' // English (Philippines) — also picks up Taglish reasonably well
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = ''
+      let interimTranscript = ''
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' '
+        } else {
+          interimTranscript += transcript
+        }
+      }
+
+      if (finalTranscript) {
+        setDefenseInput(prev => (prev + ' ' + finalTranscript).trim())
+      }
+    }
+
+    recognition.onerror = (event: any) => {
+      console.error('[Mic] Speech recognition error:', event.error)
+      setIsRecording(false)
+      recognitionRef.current = null
+    }
+
+    recognition.onend = () => {
+      // If we're still supposed to be recording (continuous mode was interrupted), restart
+      if (isRecording) {
+        try { recognition.start() } catch { /* already started */ }
+      } else {
+        recognitionRef.current = null
+      }
+    }
+
+    recognitionRef.current = recognition
+    setIsRecording(true)
+    setDefenseInput(prev => prev) // keep existing text
+    recognition.start()
+  }, [isRecording, setIsRecording, setDefenseInput])
 
   const handleAskForHint = async () => {
     if (isGrading || waitingNextTurn || !currentPhase) return

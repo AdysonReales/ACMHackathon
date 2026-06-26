@@ -1,34 +1,12 @@
 // ============================================================
-// VIEW — App shell (layout + routing, zero business logic)
+// VIEW — App shell (layout, zero business logic)
 // ============================================================
 
-import { useAppController } from './controllers/useAppController'
-import { BottomNav } from './components/BottomNav'
 import { CombatScreen } from './pages/CombatScreen'
-import { ScheduleScreen } from './pages/ScheduleScreen'
-import { EvidenceScreen } from './pages/EvidenceScreen'
-import { ProfileScreen } from './pages/ProfileScreen'
 
 import logo from './assets/logo.png'
 
 function App() {
-  const { activePage, setActivePage } = useAppController()
-
-  const renderActivePage = () => {
-    switch (activePage) {
-      case 'combat':
-        return <CombatScreen />
-      case 'schedule':
-        return <ScheduleScreen />
-      case 'evidence':
-        return <EvidenceScreen />
-      case 'profile':
-        return <ProfileScreen />
-      default:
-        return <CombatScreen />
-    }
-  }
-
   return (
     <div className="flex flex-col min-h-screen">
       {/* Top Banner Branding */}
@@ -58,14 +36,8 @@ function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 w-full bg-[var(--bg)] flex flex-col md:pl-28">
-        {renderActivePage()}
+        <CombatScreen />
       </main>
-
-      {/* Floating Bottom Nav */}
-      <BottomNav
-        activePage={activePage}
-        setActivePage={setActivePage}
-      />
     </div>
   )
 }
