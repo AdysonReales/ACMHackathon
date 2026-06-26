@@ -255,10 +255,12 @@ Summarize the student's performance in exactly two short sentences of Taglish. H
 
   // ---------- Real Speech-to-Text via Web Speech API ----------
   const recognitionRef = useRef<any>(null)
+  const isRecordingRef = useRef(false)
 
   const handleMicTap = useCallback(() => {
     // Already recording → stop
-    if (isRecording) {
+    if (isRecordingRef.current) {
+      isRecordingRef.current = false
       setIsRecording(false)
       if (recognitionRef.current) {
         recognitionRef.current.stop()
@@ -271,53 +273,50 @@ Summarize the student's performance in exactly two short sentences of Taglish. H
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
       console.warn('[Mic] SpeechRecognition not supported in this browser.')
-      setDefenseInput(prev => prev + ' [Voice input is not supported in this browser. Use Chrome or Edge.]')
+      setDefenseInput(prev => prev + ' [Voice input not supported — use Chrome or Edge.]')
       return
     }
 
     const recognition = new SpeechRecognition()
     recognition.continuous = true
-    recognition.interimResults = true
-    recognition.lang = 'en-PH' // English (Philippines) — also picks up Taglish reasonably well
+    recognition.interimResults = false  // only fire when a phrase is finalized
+    recognition.lang = 'en-PH'         // English (Philippines) — handles Taglish well
 
     recognition.onresult = (event: any) => {
-      let finalTranscript = ''
-      let interimTranscript = ''
-
+      let transcript = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript
         if (event.results[i].isFinal) {
-          finalTranscript += transcript + ' '
-        } else {
-          interimTranscript += transcript
+          transcript += event.results[i][0].transcript + ' '
         }
       }
-
-      if (finalTranscript) {
-        setDefenseInput(prev => (prev + ' ' + finalTranscript).trim())
+      if (transcript.trim()) {
+        setDefenseInput(prev => (prev ? prev + ' ' : '') + transcript.trim())
       }
     }
 
     recognition.onerror = (event: any) => {
+      // "no-speech" and "aborted" are non-fatal — don't kill the session
+      if (event.error === 'no-speech' || event.error === 'aborted') return
       console.error('[Mic] Speech recognition error:', event.error)
+      isRecordingRef.current = false
       setIsRecording(false)
       recognitionRef.current = null
     }
 
     recognition.onend = () => {
-      // If we're still supposed to be recording (continuous mode was interrupted), restart
-      if (isRecording) {
-        try { recognition.start() } catch { /* already started */ }
+      // Chrome kills continuous recognition after ~60s of silence; auto-restart if still recording
+      if (isRecordingRef.current) {
+        try { recognition.start() } catch { /* already running */ }
       } else {
         recognitionRef.current = null
       }
     }
 
     recognitionRef.current = recognition
+    isRecordingRef.current = true
     setIsRecording(true)
-    setDefenseInput(prev => prev) // keep existing text
     recognition.start()
-  }, [isRecording, setIsRecording, setDefenseInput])
+  }, [])
 
   const handleAskForHint = async () => {
     if (isGrading || waitingNextTurn || !currentPhase) return
